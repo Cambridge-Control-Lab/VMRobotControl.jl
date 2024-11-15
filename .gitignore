@@ -1,0 +1,7 @@
+Manifest.toml
+*.mp4
+*.pdf
+*.bak
+*.pb.gz
+.vscode
+docs/build/*
