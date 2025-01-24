@@ -93,7 +93,7 @@ end
 
 module_path = joinpath(splitpath(splitdir(pathof(VMRobotControl))[1])[1:end-1])
 savepath = joinpath(module_path, "docs/src/assets/rail_robot.mp4")
-animate_robot_odesolution(fig, sol, cache, savepath; f_setup=animate_f_setup, f_control=animate_f_control)
+animate_robot_odesolution(fig, sol, cache, savepath; f_setup=animate_f_setup, f_control=animate_f_control);
 
 # ```@raw html
 # <video controls width="100%" height="auto" autoplay loop>

@@ -171,7 +171,7 @@ cams[2].eyeposition[] = [0.4, 1.5, 0.3]
 
 leg = Legend(fig[1, 1], lscenes[1]; merge=true, tellwidth=false, halign=:left, valign=:top)
 savepath = joinpath(module_path, "docs/src/assets/sciurus_reaching.mp4")
-animate_robot_odesolution(fig, sol, plotting_kcache, savepath; t=plotting_t, f_setup, f_control, fastforward=1.0, fps=20)
+animate_robot_odesolution(fig, sol, plotting_kcache, savepath; t=plotting_t, f_setup, f_control, fastforward=1.0, fps=20);
 
 # ```@raw html
 # <video controls width="100%" height="auto" autoplay loop>

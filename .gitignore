@@ -5,3 +5,4 @@ Manifest.toml
 *.pb.gz
 .vscode
 docs/build/*
+docs/src/examples
