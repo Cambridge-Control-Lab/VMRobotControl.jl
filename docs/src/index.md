@@ -65,7 +65,7 @@ Please cite this library as
 ```bibtex
 @misc{VMRobotControl,
     author = {Daniel Larby},
-    title = {VMRobotControl.jl},
+    title = {{VMRobotControl.jl}},
     howpublished = {\url{https://github.com/Cambridge-Control-Lab/VMRobotControl}},
     year = {2024}
 }
