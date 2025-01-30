@@ -1,3 +1,4 @@
+
 # Simulating with DifferentialEquations.jl
 
 ## Getting started
@@ -65,3 +66,5 @@ sol.retcode
 ```
 
 ## Using `f_setup` and `f_control`
+
+Two callbacks, `f_setup` and `f_control` can be provided when simulating. The first runs once before the simulation starts. The second runs once per step. The examples section demonstrates their use and signatures.

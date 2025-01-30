@@ -73,7 +73,7 @@ Please cite this library as
 and also consider citing the authors works on [optimal virtual model control](https://doi.org/10.48550/arXiv.2411.06627)
 and [robot control for robotic surgery](https://doi.org/10.1016/j.ifacol.2023.10.015).
 ```bibtex
-@misc{larby2024optimalvirtualmodelcontrol,
+@misc{Larby2024,
       title={Optimal Virtual Model Control for Robotics: Design and Tuning of Passivity-Based Controllers}, 
       author={Daniel Larby and Fulvio Forni},
       year={2024},
@@ -83,7 +83,7 @@ and [robot control for robotic surgery](https://doi.org/10.1016/j.ifacol.2023.10
       doi = {https://doi.org/10.48550/arXiv.2411.06627},
       url={https://arxiv.org/abs/2411.06627}, 
 }
-@article{LARBY20238548,
+@article{Larby2023,
     title = {A Generalized Approach to Impedance Control Design for Robotic Minimally Invasive Surgery},
     journal = {IFAC-PapersOnLine},
     year = {2023},
@@ -102,5 +102,5 @@ I was supported by my supervisor, [Fulvio Forni](https://sites.google.com/site/f
 the other students in the group.
 
 My PhD was graciously supported by the Engineering and Physical Sciences Research Council; 
-and by [CMR Surgical](https://us.cmrsurgical.com/).
+and by [CMR Surgical](https://cmrsurgical.com/).
 

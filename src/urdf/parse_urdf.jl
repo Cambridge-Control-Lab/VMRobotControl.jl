@@ -281,7 +281,7 @@ function parse_geometry(geometry_node, cfg)
             l = parse_scalar_value(node["length"], cfg)
             origin = SVector(0.0, 0.0, -l/2)
             extremity = SVector(0.0, 0.0, l/2)
-            geom = Cylinder3{Float64}(origin, extremity, r)
+            geom = Cylinder{Float64}(origin, extremity, r)
         elseif nn == "sphere"
             r = parse_scalar_value(node["radius"], cfg)
             geom = Sphere3{Float64}(SVector(0, 0, 0), r)

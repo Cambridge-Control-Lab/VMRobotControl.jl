@@ -361,11 +361,11 @@ function spline_derivative(t::T1, s::CubicSpline{D, T2}) where {D, T1, T2}
         if t ≤ 0.0
             p₁ = sknots[1, allD]
             p₂ = (2*scontrols[1, allD] + scontrols[2, allD])/3
-            return 3*(p₂ - p₁)::T_out
+            return T_out(3*(p₂ - p₁))
         else
             p₃ = (scontrols[end-1, allD] + 2 * scontrols[end, allD])/3
             p₄ = sknots[end, allD]
-            return 3*(p₄ - p₃)::T_out
+            return T_out(3*(p₄ - p₃))
         end
     end
 end

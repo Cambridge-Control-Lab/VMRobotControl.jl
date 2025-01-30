@@ -706,40 +706,52 @@ See also [`control_step!`](@ref)
 """
 function new_control_cache end
 
-
+# Compiled mechanisms cache bundles
+new_kinematics_cache(m::CompiledMechanism; initialize::Bool=true) = new_kinematics_cache(m, eltype(m); initialize)
+new_jacobians_cache(m::CompiledMechanism; initialize::Bool=true) = new_jacobians_cache(m, eltype(m); initialize)
+new_rbstates_cache(m::CompiledMechanism; initialize::Bool=true) = new_rbstates_cache(m, eltype(m); initialize)
+new_dynamics_cache(m::CompiledMechanism; initialize::Bool=true) = new_dynamics_cache(m, eltype(m); initialize)
+new_inverse_dynamics_cache(m::CompiledMechanism; initialize::Bool=true) = new_inverse_dynamics_cache(m, eltype(m); initialize)
 
 function new_kinematics_cache(m::CompiledMechanism, ::Type{T}; initialize::Bool=true) where T 
     cache = MechKinematicsCache{T}(m)
     bundle = MechanismCacheBundle(m, cache)
-    if initialize
-        # As the kinematics cache is used for plotting, it would be confusing if when we plot with 
-        # a fresh cache, things look broken because the cache is full of invalid data. Therefore
-        # the default behaviour is to initialize the cache by calling `kinematics!` once.
-        kinematics!(bundle, zero(T), zeros(ndof(m))) 
-    end
+    # As the kinematics cache is used for plotting, it would be confusing if when we plot with 
+    # a fresh cache, things look broken because the cache is full of invalid data. Therefore
+    # the default behaviour is to initialize the cache by calling `kinematics!` once.
+    initialize && kinematics!(bundle, zero(T), zero_q(m)) 
     bundle
 end
-new_kinematics_cache(m::CompiledMechanism; initialize::Bool=true) = new_kinematics_cache(m, eltype(m); initialize)
 
-new_jacobians_cache(m::CompiledMechanism, ::Type{T}) where T = MechanismCacheBundle(m, MechJacobiansCache{T}(m))
-new_jacobians_cache(m::CompiledMechanism) = new_jacobians_cache(m, eltype(m))
+function new_jacobians_cache(m::CompiledMechanism, ::Type{T}; initialize::Bool=true) where T
+    cache = MechJacobiansCache{T}(m)
+    bundle = MechanismCacheBundle(m, cache)
+    initialize && jacobians!(bundle, zero(T), zero_q(m))
+    bundle
+end
 
-new_rbstates_cache(m::CompiledMechanism, ::Type{T}) where T = MechanismCacheBundle(m, MechRBStatesCache{T}(m))
-new_rbstates_cache(m::CompiledMechanism) = new_rbstates_cache(m, eltype(m))
+function new_rbstates_cache(m::CompiledMechanism, ::Type{T}; initialize::Bool=true) where T
+    cache = MechRBStatesCache{T}(m)
+    bundle = MechanismCacheBundle(m, cache)
+    initialize && velocity_kinematics!(bundle, zero(T), zero_q(m), zero_q̇(m))
+    bundle
+end
 
-new_dynamics_cache(m::CompiledMechanism, ::Type{T}) where T = MechanismCacheBundle(m, MechDynamicsCache{T}(m))
-new_dynamics_cache(m::CompiledMechanism) = new_dynamics_cache(m, eltype(m))
+function new_dynamics_cache(m::CompiledMechanism, ::Type{T}; initialize::Bool=true) where T
+    cache = MechDynamicsCache{T}(m)
+    bundle = MechanismCacheBundle(m, cache)
+    initialize && dynamics!(bundle, zero(T), zero_q(m), zero_q̇(m), DEFAULT_GRAVITY, zero_u(m))
+    bundle
+end
 
-new_inverse_dynamics_cache(m::CompiledMechanism, ::Type{T}) where T = MechanismCacheBundle(m, MechRNECache{T}(m))
-new_inverse_dynamics_cache(m::CompiledMechanism) = new_inverse_dynamics_cache(m, eltype(m))
+function new_inverse_dynamics_cache(m::CompiledMechanism, ::Type{T}; initialize::Bool=true) where T
+    cache = MechRNECache{T}(m)
+    bundle = MechanismCacheBundle(m, cache)
+    initialize && inverse_dynamics!(bundle, zero(T), zero_q(m), zero_q̇(m), zero_q̈(m), DEFAULT_GRAVITY)
+    bundle
+end
 
-precompute!(m::CompiledMechanism, t::Real, q::SVector, q̇::SVector, gravity::SVector{3}) = 
-    error("Deprecated. Please use the new interface with a mechanism cache constructed using `new_dynamics_cache(m)`")
-
-precompute_transforms!(m::CompiledMechanism, t::Real, q::SVector) = 
-    error("Deprecated. Please use the new interface with a mechanism cache constructed using `new_kinematics_cache(m)`")
-
-
+# VirtualMechanismSystem cache bundles
 function new_kinematics_cache(vms::CVMSystem, ::Type{T}; initialize::Bool=true) where T
     cache = VMSKinematicsCache{T}(vms)
     bundle = VirtualMechanismSystemCacheBundle(vms, cache)

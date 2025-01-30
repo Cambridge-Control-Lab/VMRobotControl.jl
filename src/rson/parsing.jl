@@ -508,12 +508,12 @@ function parseVisual!(mechanism, name::JSON_STR, data, cfg::RSONParserConfig)
         expect = (field, TYPE) -> expectField(data, field, TYPE, cfg)
         if type == "box"
             widths = parseVec(expect("size", Vector{Any}), Float64, Val{3}(), cfg)
-            mesh = normal_mesh(Rect3{Float64}(-widths./2, widths))
+            mesh = normal_mesh(Rect{3, Float64}(-widths./2, widths))
         elseif type == "cylinder"
             L = expect("length", Float64)
             origin = L * SVector(0.0, 0.0, -0.5) 
             extremity = L * SVector(0.0, 0.0, 0.5) 
-            mesh = Cylinder3{Float64}(origin, extremity, expect("radius", Float64))
+            mesh = Cylinder{Float64}(origin, extremity, expect("radius", Float64))
         elseif type == "sphere"
             origin = SVector(0.0, 0.0, 0.0)
             mesh = normal_mesh(Sphere{Float64}(origin, expect("radius", Float64)))

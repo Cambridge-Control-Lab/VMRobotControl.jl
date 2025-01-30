@@ -490,6 +490,8 @@ signatures = [
     (:get_linear_acceleration,      :cache,     MechanismCacheBundle,   (CompiledFrameID,)),
     (:get_linear_jacobian,          :cache,     MechanismCacheBundle,   (CompiledFrameID,)),
     (:get_angular_jacobian,         :cache,     MechanismCacheBundle,   (CompiledFrameID,)),
+    (:get_frame_force,              :cache,     MechanismCacheBundle,   (CompiledFrameID,)),
+    (:get_frame_torque,             :cache,     MechanismCacheBundle,   (CompiledFrameID,)),  
     # Forwards to mechanism
     (:name,                         :mechanism, MechanismCacheBundle,   ()),
     (:frames,                       :mechanism, MechanismCacheBundle,   ()),
@@ -595,6 +597,10 @@ virtual_mechanism_ndof(bundle::VMSCacheBundle) = virtual_mechanism_ndof(bundle.v
 @inline _get_linear_acc(c::VirtualMechanismSystemCacheBundle, i::VMSFrameID) = _get_linear_acc(get_vms_subcache(c, i), i.idx)
 @inline get_linear_jacobian(c::VirtualMechanismSystemCacheBundle, i::VMSFrameID) = get_linear_jacobian(get_vms_subcache(c, i), i.idx)
 @inline get_angular_jacobian(c::VirtualMechanismSystemCacheBundle, i::VMSFrameID) = get_angular_jacobian(get_vms_subcache(c, i), i.idx)
+@inline get_frame_force(c::FrameRBStatesWrenchesCache, i::VMSFrameID) = error()
+@inline get_frame_torque(c::FrameRBStatesWrenchesCache, i::VMSFrameID) = error()
+
+
 @inline coordinate(c::VMSCacheBundle, id::VMSCoordID{C, S}) where {C, S} = coordinates(get_vms_subcache(c, id))[id.idx]
 
 #===================================================================================================
@@ -633,6 +639,8 @@ get_angular_acceleration(c::ComputeCache, i::CompiledFrameID) = error("angular_a
 get_linear_acceleration(c::ComputeCache, i::CompiledFrameID) = error("linear_acceleration not available from type $(typeof(c))")
 get_linear_jacobian(c::ComputeCache, i::CompiledFrameID) =  error("linear_jacobian not available from type $(typeof(c))")
 get_angular_jacobian(c::ComputeCache, i::CompiledFrameID) = error("angular_jacobian not available from type $(typeof(c))")
+get_frame_force(c::ComputeCache, i::CompiledFrameID) =      error("frame_force not available from type $(typeof(c))")
+get_frame_torque(c::ComputeCache, i::CompiledFrameID) =     error("frame_torque not available from type $(typeof(c))")
 get_frame_forces(c::ComputeCache) =                        error("frame_forces not available from type $(typeof(c))")
 get_frame_torques(c::ComputeCache) =                       error("frame_torques not available from type $(typeof(c))")
 get_inertance_matrix(c::ComputeCache) =                     error("inertance_matrix not available from type $(typeof(c))")
@@ -692,6 +700,8 @@ get_generalized_force_workspace(c::MechDynamicsCache) = c.generalized_force_work
 get_u(c::MechRNECache) = c.u
 get_frame_forces(c::MechRNECache) = c.frame_cache.forces
 get_frame_torques(c::MechRNECache) =c.frame_cache.torques
+get_frame_force(c::MechRNECache, i::CompiledFrameID) = c.frame_cache.forces[i]
+get_frame_torque(c::MechRNECache, i::CompiledFrameID) = c.frame_cache.torques[i]
 
 # Methods for num frames to avoid ambiguity
 num_frames(c::MechanismCache) = num_frames(c.frame_cache)

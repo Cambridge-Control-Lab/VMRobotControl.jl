@@ -78,6 +78,7 @@ VMRobotControl.Spherical
 VMRobotControl.Inertance
 VMRobotControl.rigid_joint_twist
 VMRobotControl._add_jacobian_transpose_times_force!
+VMRobotControl._add_opspace_force!
 VMRobotControl.jacobian_column
 VMRobotControl.state_idxs
 VMRobotControl.remake

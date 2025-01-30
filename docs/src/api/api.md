@@ -135,12 +135,13 @@ VMRobotControl.CoordinateData
 configuration
 velocity
 jacobian
-vpa
+acceleration
 ```
 
 ### Coordinate types
 ```@docs
 CoordDifference
+CoordNorm
 CoordStack
 CoordSlice
 CoordSum

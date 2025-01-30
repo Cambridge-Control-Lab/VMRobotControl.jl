@@ -388,14 +388,13 @@ struct Visual{G, FID} <: ComponentData{Float64}
     shininess::Float32
     function Visual(frame, geometry; color=RGBAf(1.0f0, 0.0f0, 1.0f0, 1.0f0), specular=0.2f0, shininess=32.0f0)
         if isa(geometry, GeometryBasics.GeometryPrimitive)
-            _geom = hacky_normal_mesh(geometry)
+            _mesh = GeometryBasics.normal_mesh(geometry)
         elseif isa(geometry, GeometryBasics.Mesh)
-            _geom = geometry
+            _mesh = geometry
         else
             error("Invalid geometry type: $(typeof(geometry))")
         end
-        # _geom = standardize_geometrybasics_mesh(mesh)
-        new{typeof(_geom), typeof(frame)}(frame, _geom, color, specular, shininess)
+        new{typeof(_mesh), typeof(frame)}(frame, _mesh, color, specular, shininess)
     end
     
     function Visual(name, color, geometry)
