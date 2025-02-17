@@ -294,14 +294,17 @@ function loop_active(connection::ROSPyClientConnection, control_func!::Function)
     @info "State: ACTIVE"
     i = 1
     t = 0.0
+    start_time = time()
     while true
         yield() # To allow for interrupts
         command = check_tcp(connection)::Union{String, Nothing}
         if isnothing(command)
             data = check_udp(connection)
             if !isnothing(data)
-                iswarmup = true
-                i, dt, t = let t0 = t; t = time(); (i+1, t - t0, t) end
+                i, dt, t = let t0=t; 
+                    t = (time() - start_time); 
+                    (i+1, t - t0, t) 
+                end
                 stop = control_func!(connection.torques, data.state, i, t, dt)
                 stop && return STATE_STOPPED # Stop the controller gracefully
                 any(isnan, connection.torques) && error("Control function returned NaN torques: $(connection.torques)")
