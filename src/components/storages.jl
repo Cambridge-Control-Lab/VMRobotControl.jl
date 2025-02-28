@@ -314,6 +314,17 @@ end
 const ReLUSpring{T, C} = RectifiedSpring{T, C}
 ReLUSpring(args...;kwargs...) = RectifiedSpring(args...; kwargs...)
 
+"""
+add_deadzone_springs!(mechanism, stiffness, bounds, coord_id)
+
+    Creates a spring with a deadzone, that acts with stiffness `stiffness` outside of 
+    bounds `bounds`, e.g. (-1.0, 1.0), on the coordinate `coord_id`. 
+    
+    The deadzone is implemented as two ReLU springs on two new coordinates, which are
+    offset from the original coordinate by the bounds. This is because the ReLU spring 
+    is centered at zero, so the new coordinates are used to shift the 'zero point' to
+    match the bounds.
+"""
 function add_deadzone_springs!(mechanism, stiffness, bounds, coord_id)
     lb, ub = bounds
     lb_coord_id = add_coordinate!(mechanism, ConstCoord(lb); id="lb_$coord_id")
