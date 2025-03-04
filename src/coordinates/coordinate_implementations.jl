@@ -493,9 +493,9 @@ function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:FrameAngularVe
     c = mc.coord_data
     f_view = f_cache_view(cache, mc)
     @assert length(f_view) == 3
-    f = f_cache_view(cache, mc)[SVector(1, 2, 3)] # Get the force applied to the coord as an SVector
+    f = f_cache_view(cache, mc)[SVector(1, 2, 3)] # Get the applied torque as an SVector
     fID = c.frameID
-    get_frame_torques(cache)[fID] += f
+    get_frame_torques(cache)[fID] += f # Apply torque to the frame
     nothing
 end
 

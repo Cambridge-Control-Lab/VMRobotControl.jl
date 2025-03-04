@@ -24,8 +24,6 @@ function _test_inverse_dynamics(m, time, q, q̇, gravity)
     # get_u(icache) is the result of the inverse dynamics computation, and should be equal to u
     @test get_u(icache) ≈ u atol=1e-7 rtol=1e-7
 
-    # @show icache.cache.frame_cache.forces[6] - icache.cache.frame_cache.rbstates[6].acceleration.linear
-
 
     # if isa(m, CompiledMechanism)
     # elseif isa(m, CompiledVirtualMechanismSystem)

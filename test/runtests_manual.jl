@@ -1,6 +1,9 @@
-include("setup_test_mechanisms.jl")
+begin
+    using TestEnv
+    TestEnv.activate("VMRobotControl")
 
-if isdefined(Main, :Revise)
+    include("setup_test_mechanisms.jl")
+
     Revise.includet("pendulum_test.jl")
     Revise.includet("scara_test.jl")
     Revise.includet("joint_test.jl")
@@ -11,19 +14,9 @@ if isdefined(Main, :Revise)
     Revise.includet("energy_test.jl")
     Revise.includet("rson_test.jl")
     Revise.includet("Enzyme_compat_test.jl")
-else
-    include("pendulum_test.jl")
-    include("scara_test.jl")
-    include("joint_test.jl")
-    include("velocity_kinematics_test.jl")
-    include("coordinate_test.jl")
-    include("dynamics_test.jl")
-    include("inverse_dynamics_test.jl")
-    include("energy_test.jl")
-    include("rson_test.jl")
-    include("Enzyme_compat_test.jl")
 end
 
+# Run one at a time by highlighting a line
 results = @testset "All tests" begin
     results = pendulum_tests();
     results = scara_tests();

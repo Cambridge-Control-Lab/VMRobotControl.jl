@@ -1,7 +1,7 @@
 {
     "rson_version": "0.1.0",
     "type": "mechanism",
-    "name": "panda",
+    "name": "panda_surgical",
     "frames": [
         "root_frame",
         "L1_frame",
