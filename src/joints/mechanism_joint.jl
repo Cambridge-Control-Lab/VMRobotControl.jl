@@ -141,3 +141,33 @@ function q̇_idxs(j::CompiledMechanismJoint)
 end
 
 Base.show(io::IO, ::Type{CompiledMechanismJoint{T, JD}}) where {T, JD} = print(io, "CompiledMechanismJoint($T, $JD)")
+
+
+
+
+######################
+# Apply forces to frames
+######################
+
+# This must come after the definition of CompiledJointID... hence living here
+
+function _apply_joint_force_to_frames!(bundle, jID::CompiledJointID, u::Real)
+    # Axis in world frame 
+    mj = bundle[jID]
+    _apply_joint_force_to_frames!(bundle, mj.jointData, mj.parentFrameID, mj.childFrameID, u)
+    nothing
+end
+
+
+function _apply_joint_force_to_frames!(
+        bundle::CacheBundle, 
+        jointData::RevoluteData, 
+        parentFrameID::CompiledFrameID, 
+        childFrameID::CompiledFrameID, 
+        u::Real)
+    # Axis in world frame 
+    axis = rotor(get_transform(bundle, parentFrameID)) * jointData.axis
+    get_frame_torques(bundle)[parentFrameID] -= axis * u
+    get_frame_torques(bundle)[childFrameID] += axis * u
+    nothing
+end
