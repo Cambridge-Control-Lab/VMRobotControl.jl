@@ -489,6 +489,17 @@ _velocity(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = get_angular_vel(
 _jacobian(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = J_cache_view(cache, c)
 _acceleration(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = _get_angular_acc(cache, c.coord_data.frameID)
 
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:FrameAngularVelocity})
+    c = mc.coord_data
+    f_view = f_cache_view(cache, mc)
+    @assert length(f_view) == 3
+    f = f_cache_view(cache, mc)[SVector(1, 2, 3)] # Get the force applied to the coord as an SVector
+    fID = c.frameID
+    get_frame_torques(cache)[fID] += f
+    nothing
+end
+
+
 ####################################################################################################
 # CoordNorm
 ####################################################################################################

@@ -6,7 +6,19 @@ end
 
 transform_mesh(mesh, tf::Nothing) = mesh
 
-function rescale_mesh(mesh, scale)
+
+function rescale_geometry(geom, scale)
+    if typeof(geom) <: GeometryBasics.Mesh
+        return rescale_mesh(geom, scale)
+    elseif typeof(geom) <: Vector{<:Tuple{<:GeometryBasics.Mesh, <:Any}}
+        return [(rescale_mesh(mesh, scale), kwargs) for (mesh, kwargs) in geom]
+    else
+        error("Unsupported geometry type: $(typeof(geom))")
+    end
+end
+
+
+function rescale_mesh(mesh::GeometryBasics.Mesh, scale)
     c, f = GeometryBasics.coordinates(mesh), GeometryBasics.faces(mesh)
     if prod(scale)< 0
         # If scaling will turn the mesh inside out, then reverse the chirality of the faces by

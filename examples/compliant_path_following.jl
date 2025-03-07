@@ -128,8 +128,8 @@ add_component!(vm, LinearDamper(100.0, "CartPosition"); id="CartDamper");
 # the force will be reduced to ensure that the power does not exceed 10W.
 vms = VirtualMechanismSystem("System", robot, vm)
 err_coord = CoordDifference(".virtual_mechanism.CartPosition", ".robot.TCP")
-err_spring = LinearSpring(3000.0 * identity(3), "CartError")
-err_damper = LinearDamper(50.0 * identity(3), "CartError")
+err_spring = LinearSpring(3000.0, "CartError")
+err_damper = LinearDamper(50.0, "CartError")
 
 add_coordinate!(vms, err_coord;     id="CartError")
 add_component!(vms, err_spring;     id="CartErrSpring")

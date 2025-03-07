@@ -505,20 +505,20 @@ function _inverse_dynamics!(bundle::MechRNEBundle)
     # Backward pass
     foreach(get_force_components(m)) do component # add forces for each component to coordinates
         _add_opspace_force!(bundle, component)
-        @show f_cache_view(bundle, m[component.coord])
+        # @show f_cache_view(bundle, m[component.coord])
     end
-    @show frame_forces
-    println("Backward pass part 1")
+    # @show frame_forces
+    # println("Backward pass part 1")
     compute_in_reverse_coordinate_order(coordinates(m)) do coord # propagate forces through coordinates
         __propagate_opspace_force!(bundle, coord)
-        @show frame_forces
+        # @show frame_forces
     end
-    println("Backward pass part 2")
+    # println("Backward pass part 2")
     for (parent, child) in Iterators.reverse(m.rbtree.walk) # propagate forces through frames/joints
         frame_forces[parent] += frame_forces[child]
         δ = origin(get_transform(cache, CompiledFrameID(parent))) - origin(get_transform(cache, CompiledFrameID(child)))
         frame_torques[parent] += frame_torques[child] - cross(δ, frame_forces[child])
-        @show frame_forces
+        # @show frame_forces
     end
     # Project forces to joints
     foreach(joints(m)) do joint

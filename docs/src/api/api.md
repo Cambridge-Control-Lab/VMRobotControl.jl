@@ -162,6 +162,7 @@ VMRobotControl.Storage
 LinearSpring
 TanhSpring
 GaussianSpring
+RectifiedSpring
 GravityCompensator
 ForceSource
 PowerSource

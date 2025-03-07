@@ -143,7 +143,7 @@ results = @testset "All tests" begin
     results = @testset "Velocity Kinematics AD" test_on_mechanisms(test_velocity_kinematics_vs_autodiff, small_immut_mechanisms);
     results = @testset "Coordinate tests" test_on_mechanisms(test_coordinates, compiled_systems);
     results = @testset "Dynamics tests" test_on_mechanisms(test_dynamics, systems_with_inertances);
-    # results = @testset "Inverse Dynamics tests" test_on_mechanisms(test_inverse_dynamics, compiled_mechanisms); # TODO 
+    results = @testset "Inverse Dynamics tests" test_on_mechanisms(test_inverse_dynamics, compiled_mechanisms); # TODO 
     results = @testset "Energy tests" test_on_mechanisms(test_energy, systems_with_inertances);
     results = @testset "RSON tests" test_on_mechanisms(test_rson, systems);
     # TODO ForwardDiff compat tests
