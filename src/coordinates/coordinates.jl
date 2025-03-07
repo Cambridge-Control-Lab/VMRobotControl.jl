@@ -14,10 +14,12 @@ Base.eltype(c::CoordinateData) = eltype(typeof(c))
 cache_size(c::CoordinateData) = cache_size(typeof(c))
 remaker_of(c::CoordinateData) = parameterless_type(c)
 
-struct CompiledCoord{C<:CoordinateData}
+@kwdef struct CompiledCoord{C<:CoordinateData}
     coord_data::C
     cache_idxs::UnitRange{Int}
 end
+
+remaker_of(c::CompiledCoord) = parameterless_type(c)
 
 Base.show(io::IO, ::Type{<:CompiledCoord{C}}) where C = print(io, "CompiledCoord{$C}")
 
