@@ -150,7 +150,8 @@ function parse_link!(mechanism, link, cfg)
 end
 
 function parse_inertial!(mechanism, inertial, link_frame, cfg)
-    transform = nothing
+    # Default to no transform
+    transform = zero(Transform{cfg.element_type}) 
     mass = nothing
     inertia = nothing
     for node in eachelement(inertial)
@@ -287,11 +288,13 @@ function parse_geometry(geometry_node, cfg)
             geom = Sphere3{Float64}(SVector(0, 0, 0), r)
         elseif nn == "mesh"
             filename = node["filename"]
-            geom = load_mesh(filename, cfg)
+            geom = load_mesh(filename, cfg) 
+            # This will either be a mesh, or vector of tuples containing mesh and kwargs for 
+            # visual properties
             if haskey(node, "scale") 
                 scale_vec = parse_3vec(node["scale"], cfg)
                 scale = GeometryBasics.Point{3, Float64}(scale_vec...)
-                geom = VMRobotControl.rescale_mesh(geom, scale)
+                geom = VMRobotControl.rescale_geometry(geom, scale)
             end
         else 
             raise_not_recognized(nn, cfg)

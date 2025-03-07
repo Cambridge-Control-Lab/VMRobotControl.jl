@@ -300,7 +300,18 @@ end
 ############################
 # ReLUSpring
 ############################
+"""
+    RectifiedSpring(stiffness, coord, flipped::Bool)
+    ReLUSpring(stiffness, coord, flipped::Bool)
 
+A linear spring which acts only when the coordinate is positive (flipped=false) or negative 
+(flipped=true). 
+
+Check implementation details if applying to any coordinate larger than 1D, to ensure
+behaviour is as expected. 
+
+See also [`add_deadzone_springs`](@ref).
+"""
 @kwdef struct RectifiedSpring{T<:Real, K, C} <: Storage{T}
     stiffness::K
     coord::C
