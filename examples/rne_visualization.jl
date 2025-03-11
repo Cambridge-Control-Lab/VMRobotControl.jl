@@ -39,7 +39,8 @@ using
 # end
     
 # We compile the mechanism, and setup an ODE problem to simulate the dynamics of the rail robot.
-m = compiled_mechanisms[end]
+# m = compiled_mechanisms[5]
+m = compile(parseRSON("./RSONs/rsons/trivial2link.rson"))
 cache = Observable(new_inverse_dynamics_cache(m))
 # @testset test_inverse_dynamics(m)
 
@@ -50,9 +51,8 @@ begin
 
 t = 0.0
 q = [0.0, π/2]
-q = zero_q(m) + randn(7)
-q̇ = zero_q̇(m) + randn(7)
-g = SVector{3, Float64}(0.0, 0.0, -10) #+ rand(SVector{3, Float64})
+q̇ = zero_q̇(m)
+g = SVector{3, Float64}(0.0, 0.0, 0.0)
 
 # rng = MersenneTwister(1234)
 # t = 0.0
@@ -62,21 +62,30 @@ g = SVector{3, Float64}(0.0, 0.0, -10) #+ rand(SVector{3, Float64})
 
 u = zero_u(m)
 
-dcache = new_dynamics_cache(m)
-dynamics!(dcache, t, q, q̇, g, u)
-q̈ = get_q̈(dcache)
+# dcache = new_dynamics_cache(m)
+# dynamics!(dcache, t, q, q̇, g, u)
+# q̈ = get_q̈(dcache)
+onehot_q̈ = [1.0, 0.0]
+q̈ = onehot_q̈
+
 
 VMRobotControl._inverse_dynamics_set_inputs!(bundle, t, q, q̇, q̈, g)
 VMRobotControl._inverse_dynamics_forward_pass!(bundle)
 VMRobotControl._inverse_dynamics_zero!(bundle)
 VMRobotControl._inverse_dynamics_backward_pass_a!(bundle)
 VMRobotControl._inverse_dynamics_backward_pass_b!(bundle)
-VMRobotControl._inverse_dynamics_backward_pass_c!(bundle)
-VMRobotControl._inverse_dynamics_backward_pass_d!(bundle)
+# VMRobotControl._inverse_dynamics_backward_pass_c!(bundle)
+# VMRobotControl._inverse_dynamics_backward_pass_d!(bundle)
+
+# @show get_u(bundle)
+
+# @show inverse_dynamics!(bundle, t, q, zero_q̇(m), onehot_q̈, 0*g)
+
+# _test_RNE_inertance_matrix(bundle, dcache, t, q)
 
 # q̈_out = dynamics!(dcache, t, q, q̇, g, get_u(bundle))
 
-@test get_u(cache[]) ≈ u atol=1e-7 rtol=1e-7
+# @test get_u(cache[]) ≈ u atol=1e-7 rtol=1e-7
 # @test q̈ ≈ q̈_out atol=1e-7 rtol=1e-7
 end
 
@@ -86,6 +95,7 @@ fig = Figure()
 display(fig)
 ls = LScene(fig[1, 1]; show_axis=false)
 robotsketch!(ls, cache; linewidth=3, scale=0.05)
+robotvisualize!(ls, cache)
 
 frameIDs = get_compiled_frameID.((cache[],), frames(cache[]))
 tfs = map(cache) do cache
@@ -114,8 +124,8 @@ arrows!(ls, positions, τs; lengthscale=τ_scale, arrowsize=0.04, color=:blue, )
 
 end
 
-using Test, Random
-Revise.includet("../test/inverse_dynamics_test.jl")
+# using Test, Random
+# Revise.includet("../test/inverse_dynamics_test.jl")
 @testset test_inverse_dynamics(m)
 
 # function create_rotated_cylinder_mesh(N1, N2, r1, r2, ϕ)

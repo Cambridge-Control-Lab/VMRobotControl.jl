@@ -585,8 +585,22 @@ function _RNE_inertance_matrix!(M::Matrix, bundle::MechRNEBundle, t, q)
         # Set acceleration for one joint
         fill!(q̈, zero(eltype(q̈)))
         q̈[j] = 1.0
-        # Compute inverse dynamics
-        u = inverse_dynamics!(bundle, t, q, q̇, q̈, g)
+        # Compute inverse dynamics, on inertance/generic components only.
+        u = begin
+            _inverse_dynamics_set_inputs!(bundle, t, q, q̇, q̈, g)
+            _inverse_dynamics_forward_pass!(bundle)
+            _inverse_dynamics_zero!(bundle)
+            # WARNING any generic components which applies a force other than due
+            # to an inertance will break this computation.
+            inertance_components = get_inertance_components(bundle.mechanism)
+            foreach(inertance_components) do component 
+                _add_opspace_force!(bundle, component)
+            end
+            _inverse_dynamics_backward_pass_b!(bundle)
+            _inverse_dynamics_backward_pass_c!(bundle)
+            _inverse_dynamics_backward_pass_d!(bundle)
+            get_u(bundle)
+        end
         M[:, j] .= u
     end
     M
