@@ -571,6 +571,27 @@ function inverse_dynamics!(bundle::MechRNEBundle, t, q, q̇, q̈, gravity)
     get_u(bundle)
 end
 
+function _RNE_inertance_matrix!(M::Matrix, bundle::MechRNEBundle, t, q)
+    N = ndof(bundle.mechanism)
+    @assert size(M) == (N, N)
+
+    q̇ = get_q̇(bundle)
+    q̈ = get_q̈(bundle)
+    g = get_gravity(bundle)[]
+    for j = 1:N
+        # Zero velocity and gravity
+        fill!(q̇, zero(eltype(q̇)))
+        g = zero(g)
+        # Set acceleration for one joint
+        fill!(q̈, zero(eltype(q̈)))
+        q̈[j] = 1.0
+        # Compute inverse dynamics
+        u = inverse_dynamics!(bundle, t, q, q̇, q̈, g)
+        M[:, j] .= u
+    end
+    M
+end
+
 
 #==============================================================================#
 const VMS_CONTROL_NOTE = """

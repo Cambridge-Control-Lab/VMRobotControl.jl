@@ -166,7 +166,7 @@ function _apply_joint_force_to_frames!(
         childFrameID::CompiledFrameID, 
         u::Real)
     # Axis in world frame 
-    axis = rotor(get_transform(bundle, parentFrameID)) * jointData.axis
+    axis = rotor(get_transform(bundle, parentFrameID)) * rotor(jointData.transform) * jointData.axis
     get_frame_torques(bundle)[parentFrameID] -= axis * u
     get_frame_torques(bundle)[childFrameID] += axis * u
     nothing
