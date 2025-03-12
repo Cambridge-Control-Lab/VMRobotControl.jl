@@ -53,6 +53,11 @@ function _test_inverse_dynamics(m, time, q, q̇, q̈, gravity; rng=MersenneTwist
     # Test inertance matrix computed via RNE
     _test_RNE_inertance_matrix(icache, dcache, time, q)
 
+    ############################
+    # Test 5
+    # Check no allocs
+    allocs = @allocated inverse_dynamics!(icache, time, q, q̇, q̈, gravity)
+    @test allocs == 0
 end
 
 function _test_one_coord_vs_jacobian(icache, dcache, rng, coord)
