@@ -298,6 +298,13 @@ function _sketchjoint!(ax, joint::RailData, cache::Observable;
     (s,)
 end
 
+function _sketchjoint!(ax, joint::ReferenceJoint, cache::Observable; 
+                       scale, meshcolor, linecolor, linewidth, shading)
+    # TODO implement    
+    ()
+end
+
+
 ################################################################################
 # Component Sketch
 ################################################################################
