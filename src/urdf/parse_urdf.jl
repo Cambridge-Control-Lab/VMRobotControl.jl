@@ -237,34 +237,8 @@ function parse_visual!(mechanism, visualnode, link_frame, cfg)
     isnothing(geometry) && error("Geometry not specified for visual with name '$name'.")
     isnothing(material) && (material = cfg.default_material)
 
-    if typeof(geometry)<:Vector{<:Tuple{<:Mesh, <:NamedTuple}}
-        for (i, (mesh, kwargs)) in enumerate(geometry)
-            v = Visual(link_frame, mesh; kwargs...)
-            isnothing(transform) || (v = transform * v)
-            add_component!(mechanism, v; id=name*"_$i")
-        end
-    else
-        v = Visual(link_frame, geometry; material...)
-        isnothing(transform) || (v = transform * v)
-        add_component!(mechanism, v; id=name)
-    end
-
-    # visual = let
-    #     Visual(name, link_frame, material, geometry)
-    # end
-    
-    # # As each urdf link can have several visuals, we need to give them different names.
-    # visual_ids = collect(keys(VMRobotControl.visuals(mechanism)))
-    # # Check if name already exists, and if so, add a number to it
-    # i = 1
-    # while true
-    #     if (name * "_$i") in visual_ids 
-    #         i += 1
-    #     else
-    #         break
-    #     end
-    # end
-    # add_component!(mechanism, visual; id=name*"_$i")
+    v = Visual(link_frame, transform, geometry; material...)
+    add_component!(mechanism, v; id=name)
 end
 
 function parse_geometry(geometry_node, cfg)
@@ -288,14 +262,14 @@ function parse_geometry(geometry_node, cfg)
             geom = Sphere3{Float64}(SVector(0, 0, 0), r)
         elseif nn == "mesh"
             filename = node["filename"]
-            geom = load_mesh(filename, cfg) 
-            # This will either be a mesh, or vector of tuples containing mesh and kwargs for 
-            # visual properties
-            if haskey(node, "scale") 
+            mesh = load_mesh(filename, cfg)
+            if haskey(node, "scale")
+                # TODO this wont work with all types of mesh... should be robustified
                 scale_vec = parse_3vec(node["scale"], cfg)
                 scale = GeometryBasics.Point{3, Float64}(scale_vec...)
-                geom = VMRobotControl.rescale_geometry(geom, scale)
+                mesh = VMRobotControl.rescale_mesh(mesh, scale)
             end
+            geom = MeshFromFile(mesh, filename)
         else 
             raise_not_recognized(nn, cfg)
         end
@@ -321,7 +295,7 @@ function load_mesh(filename, cfg)
     try
         ret = load(path) # Try load
         if isa(ret, DAEScene)
-            return convert_for_glmakie(ret)
+            return ret
         elseif isa(ret, Mesh)
             return ret
         else

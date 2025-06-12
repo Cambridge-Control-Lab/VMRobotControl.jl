@@ -29,7 +29,8 @@ using ..VMRobotControl:
     RevoluteData,
     PrismaticData,
     Rigid,
-    MechanismJoint
+    MechanismJoint,
+    MeshFromFile
    
 import JSON
 

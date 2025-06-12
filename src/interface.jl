@@ -37,6 +37,7 @@ function compute_in_coordinate_order(f, coords::Vector{<:TypeStableCollection})
     for tsc in coords
         foreach(tsc) do coord
             f(coord)
+            nothing
         end
     end
     nothing
@@ -751,7 +752,18 @@ See also [`dynamics!`](@ref)
 function new_dynamics_cache end
 
 
-# TODO
+"""
+    new_inverse_dynamics_cache(m[, T])
+
+Creates a cache with element type `::T` (defaulting to the eltype of the mechanism) for performing
+inverse dynamics computations with the Recursive Newton Euler (RNE) algorithm on  a compiled mechanism.
+
+This cache supports computation of frame transforms, velocities, velocity-product-accelerations.
+It also supports [`configuration`](@ref), [`velocity`](@ref), [`acceleration`](@ref), but 
+not [`jacobian`](@ref) for coordinates.
+
+See also [`dynamics!`](@ref)
+"""
 function new_inverse_dynamics_cache end
 
 """

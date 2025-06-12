@@ -19,6 +19,7 @@ using VMRobotControl:
     CompiledFrameID,
     CompiledJointID,
     CompiledCoordID,
+    CompiledVisual,
     VMSFrameID,
     VMSCoordID
 using VMRobotControl: 
@@ -503,21 +504,16 @@ function Makie.plot!(plot::RobotVisualize{Tuple{C}}) where C<:MechanismCacheBund
     frames = CompiledFrameID[]
 
     foreach(vis) do v
-        # geom = normal_mesh(v.geometry)
-        geom = v.geometry
-        if isa(geom, Mesh)
-            msh = Makie.mesh!(plot, geom; 
+        v::CompiledVisual
+        msh = Makie.mesh!(plot, v.mesh; 
                 shading=plot.shading,
                 color=v.color, 
                 specular=v.specular,
                 shininess=v.shininess,
                 transparency=plot.transparency
-            )
-            push!(meshes, msh)
-            push!(frames, v.frame)
-        else
-            error("Unsupported geometry type: $(typeof(geom))")
-        end       
+        )
+        push!(meshes, msh)
+        push!(frames, v.frame)
     end
 
     function update_from_cache(cache)

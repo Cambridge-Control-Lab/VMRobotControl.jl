@@ -11,6 +11,8 @@ using GeometryBasics
 using LinearAlgebra: Diagonal, Symmetric, issymmetric, isposdef
 using StaticArrays
 using ..VMRobotControl
+using ..VMRobotControl:
+    MeshFromFile
 
 include("./parse_urdf.jl")
 end

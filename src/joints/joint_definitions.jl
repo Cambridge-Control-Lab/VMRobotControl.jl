@@ -623,12 +623,23 @@ function _project_forces_to_jointspace(j::RevoluteData, tf_p::Transform{T}, tf_c
 
     # The minus sign is due to the fact that the torque is expressed on the right side of the 
     # equation 
-    u = -dot(rotor(tf_p) * rotor(j.transform) * j.axis, τ_c)
+    axis = rotor(tf_p) * rotor(j.transform) * j.axis
+    u = -dot(axis, τ_c)
     return SVector(u)
 end
 
 function _project_forces_to_jointspace(j::PrismaticData, tf_p::Transform{T}, tf_c::Transform{T}, f_p::S, f_c::S, τ_p::S, τ_c::S) where {T, S<: SVector{3, T}} 
     # Rotate axis to world frame, then dot with force
-    u = -dot(rotor(tf_c) * j.axis, f_c)
+    axis = rotor(tf_c) * j.axis
+    u = -dot(axis, f_c)
+    return SVector(u)
+end
+
+function _project_forces_to_jointspace(j::RailData, tf_p::Transform{T}, tf_c::Transform{T}, f_p::S, f_c::S, τ_p::S, τ_c::S) where {T, S<: SVector{3, T}} 
+    # Rotate axis to world frame, then dot with force
+    # TODO test
+    dspline = spline_derivative(q[1]/joint.scaling, joint.spline)/joint.scaling
+    axis = rotor(tfₚ) * rotor(joint.transform) * dspline
+    u = -dot(axis, f_c)
     return SVector(u)
 end

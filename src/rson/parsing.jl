@@ -508,15 +508,15 @@ function parseVisual!(mechanism, name::JSON_STR, data, cfg::RSONParserConfig)
         expect = (field, TYPE) -> expectField(data, field, TYPE, cfg)
         if type == "box"
             widths = parseVec(expect("size", Vector{Any}), Float64, Val{3}(), cfg)
-            mesh = normal_mesh(Rect{3, Float64}(-widths./2, widths))
+            geom = Rect{3, Float64}(-widths./2, widths)
         elseif type == "cylinder"
             L = expect("length", Float64)
             origin = L * SVector(0.0, 0.0, -0.5) 
             extremity = L * SVector(0.0, 0.0, 0.5) 
-            mesh = Cylinder{Float64}(origin, extremity, expect("radius", Float64))
+            geom = Cylinder{Float64}(origin, extremity, expect("radius", Float64))
         elseif type == "sphere"
             origin = SVector(0.0, 0.0, 0.0)
-            mesh = normal_mesh(Sphere{Float64}(origin, expect("radius", Float64)))
+            geom = Sphere{Float64}(origin, expect("radius", Float64))
         elseif type == "mesh"
             if isnothing(cfg.rson_path)
                 rson_path = "."
@@ -527,6 +527,7 @@ function parseVisual!(mechanism, name::JSON_STR, data, cfg::RSONParserConfig)
             mesh_path = expect("filename", String)
             path = joinpath(rson_path, mesh_path)
             mesh = load_mesh(path, cfg) # This can return multiple meshes
+            geom = MeshFromFile(mesh, mesh_path) # MeshFromFile is a wrapper for GeometryBasics.Mesh
             # visual.scale = expect("scale")
         elseif type == "meshdata"
             verts = expect("vertices", Vector{Any})
@@ -534,20 +535,15 @@ function parseVisual!(mechanism, name::JSON_STR, data, cfg::RSONParserConfig)
             # TODO verify that verts and faces are correct types/lengths
             verts = [parseVertex(vert, cfg) for vert in verts]
             faces = [parseFace(face, cfg) for face in faces]
-            mesh = GeometryBasics.Mesh(verts, faces)
+            geom = GeometryBasics.Mesh(verts, faces)
         else
             rson_throw_exception("Unrecognised visual type '$(type)'", cfg)
         end
         frame = parseFrameOutsideFramesList(mechanism, expect("frame", Union{String, OrderedDict{String, Any}}), cfg)
         color = parseMaterial(expect("material", Union{String, Vector{Any}}), cfg)
         
-        if isa(mesh, Vector{<:Tuple{<:Mesh, <:NamedTuple}})
-            for (i, (mesh, kwargs)) in enumerate(mesh)
-                add_component!(mechanism, Visual(frame, mesh; kwargs...); id=name*"_$i")
-            end
-        else
-            add_component!(mechanism, Visual(frame, color, mesh); id=name)
-        end
+        tf = zero(Transform{Float64})
+        add_component!(mechanism, Visual(frame, tf, geom; color); id=name)
         check_for_remaining_fields(data, cfg)
         nothing
     else
@@ -561,7 +557,7 @@ function load_mesh(path, cfg)
         if isa(ret, GeometryBasics.Mesh)
             return ret
         elseif isa(ret, DAEScene)
-            return convert_for_glmakie(ret)
+            return ret
         else
             throw("Unhandled mesh type $(typeof(ret))")
         end

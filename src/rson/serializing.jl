@@ -283,14 +283,47 @@ end
 # Visual
 
 function serialize_component(v::Visual)
-    @assert v.geometry isa Mesh
-    verts = GeometryBasics.coordinates(v.geometry)
-    faces = [Int[face...] for face in GeometryBasics.faces(v.geometry)]
-    OrderedDict(
-        "type" => "meshdata",
-        "frame" => v.frame,
-        "material" => jsonify(v.color),
-        "vertices" => verts,
-        "faces" => faces
-    )
+    if v.geometry isa Mesh
+        @warn "Serializing a mesh directly will create a large rson file."
+        verts = GeometryBasics.coordinates(v.geometry)
+        faces = [Int[face...] for face in GeometryBasics.faces(v.geometry)]
+        OrderedDict(
+            "type" => "meshdata",
+            "frame" => v.frame,
+            "material" => jsonify(v.color),
+            "vertices" => verts,
+            "faces" => faces
+        )
+    elseif v.geometry isa MeshFromFile
+        OrderedDict(
+            "type" => "mesh",
+            "frame" => v.frame,
+            "material" => jsonify(v.color),
+            "filename" => v.geometry.path 
+        )
+    elseif v.geometry isa Rect
+        OrderedDict(
+            "type" => "box",
+            "frame" => v.frame,
+            "material" => jsonify(v.color),
+            "size" => v.geometry.widths 
+        )
+    elseif v.geometry isa Cylinder
+        OrderedDict(
+            "type" => "cylinder",
+            "frame" => v.frame,
+            "material" => jsonify(v.color),
+            "radius" => v.geometry.radius,
+            "length" => norm(v.geometry.origin - v.origin.extremity)
+        )
+    elseif v.geometry isa Sphere 
+        OrderedDict(
+            "type" => "sphere",
+            "frame" => v.frame,
+            "material" => jsonify(v.color),
+            "radius" => v.geometry.r 
+        )
+    else
+        rson_throw_exception("Unrecognised visual type '$(type)'", cfg)
+    end
 end

@@ -454,7 +454,14 @@ function _compile_component!(
     cd1 = reassign_frames(component_data,   frame_id_map)
     cd2 = reassign_joints(cd1,              joint_id_map)
     cd3 = reassign_coords(cd2,              coord_id_map)
-    cc, idx = extend(cc, cd3)
+    cd4 = isa(cd3, Visual) ? compile_visual(cd3) : cd3 # this may return a vector of compiled visuals
+    if isa(cd4, AbstractVector)
+        for cd in cd4
+            cc, idx = extend(cc, cd)
+        end
+    else
+        cc, idx = extend(cc, cd4)
+    end 
     ret_component_id_map[id] = CompiledComponentID(idx)
     cc
 end
@@ -513,7 +520,7 @@ inertances(m::CompiledMechanism) = filtertype(m.components, Inertance)
 storages(m::CompiledMechanism) = filtertype(m.components, Storage)
 dissipations(m::CompiledMechanism) = filtertype(m.components, Dissipation)
 generic_components(m::CompiledMechanism) = filtertype(m.components, GenericComponent)
-visuals(m::CompiledMechanism) = filtertype(m.components, Visual)
+visuals(m::CompiledMechanism) = filtertype(m.components, CompiledVisual)
 
 
 compile(m::Mechanism) = CompiledMechanism(m)
@@ -538,15 +545,15 @@ get_compiled_coordID(m::CompiledMechanism, c::String) = get_compiled_coordID(m.r
 get_compiled_componentID(m::CompiledMechanism, c::String) = m.component_id_map[c]
 
 get_compiled_joint(m::CompiledMechanism, jointID::CompiledJointID) = joints(m)[jointID.idx]
-get_compiled_coord(m::CompiledMechanism, coordID::CompiledCoordID) = coordinates(m)[coordID]
-get_compiled_component(m::CompiledMechanism, componentID::CompiledComponentID) = components(m)[componentID]
+get_compiled_coord(m::CompiledMechanism, coordID::CompiledCoordID) = coordinates(m)[coordID.depth][coordID.idx]
+get_compiled_component(m::CompiledMechanism, componentID::CompiledComponentID) = components(m)[componentID.idx]
 
 Base.getindex(m::CompiledMechanism, id::CompiledJointID) = get_compiled_joint(m, id)
 Base.getindex(m::CompiledMechanism, id::CompiledCoordID) = get_compiled_coord(m, id)
 Base.getindex(m::CompiledMechanism, id::CompiledComponentID) = get_compiled_component(m, id)
 
 Base.setindex!(m::CompiledMechanism, val::J, id::CompiledJointID{J}) where J = joints(m)[id.idx] = val
-Base.setindex!(m::CompiledMechanism, val::C, id::CompiledCoordID{C}) where C = coordinates(m)[id.idx] = val
+Base.setindex!(m::CompiledMechanism, val::C, id::CompiledCoordID{C}) where C = coordinates(m)[id.depth][id.idx] = val
 Base.setindex!(m::CompiledMechanism, val::C, id::CompiledComponentID{C}) where C = components(m)[id.idx] = val
 
 get_force_components(m::CompiledMechanism) = filtertype(components(m), Union{Storage, Dissipation, Inertance, GenericComponent})

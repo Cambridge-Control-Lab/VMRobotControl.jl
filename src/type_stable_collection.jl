@@ -74,7 +74,7 @@ end
 
 @generated function Base.getindex(c::TypeStableCollection{TUPTYPE}, i::TypeStableIdx{T}) where {TUPTYPE, T} 
     tupidx = _get_matching_tupindex(c, T)
-    isnothing(tupidx) && error("Type $T not found in TypeStableCollection. Types in collection: $(map(eltype, TUPTYPE.types))")
+    isnothing(tupidx) && return quote error("Type $T not found in TypeStableCollection. Types in collection: $(map(eltype, TUPTYPE.types))") end
     return quote
         c.tup[$tupidx][i.vecidx]
     end
@@ -82,7 +82,7 @@ end
 
 @generated function Base.setindex!(c::TypeStableCollection, val::T, i::TypeStableIdx{T}) where T
     tupidx = _get_matching_tupindex(c, T)
-    isnothing(tupidx) && error("Type $T not found in TypeStableCollection")
+    isnothing(tupidx) && return quote error("Type $T not found in TypeStableCollection") end
     return quote
         c.tup[$tupidx][i.vecidx] = val
         c

@@ -224,6 +224,9 @@ import DiffResults:
 import
     GeometryBasics # Use import to avoid name conflicts
 
+using GeometryBasics:
+    normal_mesh
+
 using 
     DigitalAssetExchangeFormatIO,
     FileIO,

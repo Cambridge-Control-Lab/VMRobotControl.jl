@@ -378,41 +378,96 @@ end
 
 #####################################################
 
+struct MeshFromFile{M} # used for urdf/rson parsing/serializing
+    mesh::M
+    path::String
+end
+
 struct Visual{G, FID} <: ComponentData{Float64}
     frame::FID
+    transform::Union{Nothing, Transform{Float64}}
     geometry::G
     color::RGBAf
     specular::Float32
     shininess::Float32
-    function Visual(frame, geometry; color=RGBAf(1.0f0, 0.0f0, 1.0f0, 1.0f0), specular=0.2f0, shininess=32.0f0)
+    function Visual(frame, transform, geometry; color=RGBAf(1.0f0, 0.0f0, 1.0f0, 1.0f0), specular=0.2f0, shininess=32.0f0)
         if isa(geometry, GeometryBasics.GeometryPrimitive)
-            _mesh = GeometryBasics.normal_mesh(geometry)
+            # _mesh = GeometryBasics.normal_mesh(geometry)
+            new{typeof(geometry), typeof(frame)}(frame, transform, geometry, color, specular, shininess)
         elseif isa(geometry, GeometryBasics.Mesh)
+            _mesh = GeometryBasics.normal_mesh(geometry)
+            new{typeof(_mesh), typeof(frame)}(frame, transform, _mesh, color, specular, shininess)
+        elseif isa(geometry, MeshFromFile{<:GeometryBasics.Mesh})
             _mesh = geometry
+            new{typeof(_mesh), typeof(frame)}(frame, transform, _mesh, color, specular, shininess)
+        elseif isa(geometry, MeshFromFile{DAEScene})
+            new{typeof(geometry), typeof(frame)}(frame, transform, geometry, color, specular, shininess)
         else
-            error("Invalid geometry type: $(typeof(geometry))")
+            error("Unrecognized geometry type: $(typeof(geometry))")
         end
-        new{typeof(_mesh), typeof(frame)}(frame, _mesh, color, specular, shininess)
     end
     
-    function Visual(name, color, geometry)
-        # legacy constructor
-        Visual(name, geometry; color=color)
-    end
+    # function Visual(name, color, geometry)
+    #     # legacy constructor
+    #     Visual(name, geometry; color=color)
+    # end
     
-    function Visual(name, frame, color, geometry)
-        @warn "Visual(name, frame, color, geometry) is deprecated. Use Visual(frame, color, geometry) instead."
-        Visual(frame, color, geometry)
-    end
-    # Keyword constructor
-    Visual(; frame, geometry, color, specular, shininess) = Visual(frame, geometry; color=color, specular=specular, shininess=shininess)
+    # function Visual(name, frame, color, geometry)
+    #     @warn "Visual(name, frame, color, geometry) is deprecated. Use Visual(frame, color, geometry) instead."
+    #     Visual(frame, color, geometry)
+    # end
+    # # Keyword constructor
+    Visual(; frame, transform, geometry, color, specular, shininess) = Visual(frame, transform, geometry; color, specular, shininess)
 end
 
 function Base.:*(tf::Transform, v::Visual)
-    Visual(v.frame, v.color, VMRobotControl.transform_mesh(v.geometry, tf))
+    if isnothing(v.transform)
+        remake(v; transform=tf)
+    else
+        remake(v; transform=tf*v.transform)
+    end
 end
-
 
 _reassign_frames(c::Visual, frd) = remake(c; frame=get_compiled_frameID(frd, c.frame))
 _reassign_joints(c::Visual, jrd) = c
 _reassign_coords(c::Visual, crd) = c
+
+struct CompiledVisual{M<:GeometryBasics.Mesh} <:ComponentData{Float64}
+    frame::FrameID
+    mesh::M
+    color::RGBAf
+    specular::Float32
+    shininess::Float32
+end
+
+function compile_visual(v::Visual)
+    if isa(v.geometry, MeshFromFile{DAEScene})
+        # If the geometry is a DAE scene, load it
+        meshes_kwargs = convert_for_glmakie(v.geometry.mesh)
+        return [
+            begin
+                color = haskey(kwargs, :color) ? kwargs[:color] : v.color
+                specular = haskey(kwargs, :specular) ? kwargs[:specular] : v.specular
+                shininess = haskey(kwargs, :shininess) ? kwargs[:shininess] : v.shininess
+                _mesh = convert(GeometryBasics.GLNormalMesh{3}, mesh)
+                transformed_mesh = VMRobotControl.transform_mesh(_mesh, v.transform)
+                M = typeof(transformed_mesh)
+                CompiledVisual{M}(v.frame, transformed_mesh, color, specular, shininess)
+            end
+            for (mesh, kwargs) in meshes_kwargs
+        ]
+    end
+
+    if isa(v.geometry, MeshFromFile{<:GeometryBasics.Mesh})
+        # If the geometry is a mesh from file, load it
+        mesh = normal_mesh(v.geometry.mesh)
+    elseif isa(v.geometry, GeometryBasics.GeometryPrimitive)
+        # Otherwise, use the geometry as is
+        mesh = normal_mesh(v.geometry)
+    elseif isa(v.geometry, GeometryBasics.Mesh)
+        mesh = normal_mesh(v.geometry)
+    else
+        error("Unrecognized geometry type: $(typeof(v.geometry))")
+    end
+    CompiledVisual(v.frame, mesh, v.color, v.specular, v.shininess)
+end
