@@ -62,6 +62,13 @@ end
 
 @inline __acceleration!(cache::CacheBundle, c::CMC{<:CoordDifference}) = nothing
 
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:CoordDifference})
+    f_view = f_cache_view(cache, mc)
+    f_cache_view(cache, cache[mc.coord_data.parent]) .+= f_view
+    f_cache_view(cache, cache[mc.coord_data.child]) .-= f_view
+    nothing
+end
+
 function _configuration(cache::CacheBundle, c::CMC{<:CoordDifference})
     z_p = _configuration(cache, c.coord_data.parent)
     z_c = _configuration(cache, c.coord_data.child)
@@ -106,6 +113,14 @@ end
 
 @inline __acceleration!(cache::CacheBundle, c::CMC{<:CoordSum}) = nothing
 
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:CoordSum})
+    f_view = f_cache_view(cache, mc)
+    f_cache_view(cache, cache[mc.coord_data.c1]) .+= f_view
+    f_cache_view(cache, cache[mc.coord_data.c2]) .+= f_view
+    nothing
+end
+
+
 function _configuration(cache::CacheBundle, c::CMC{<:CoordSum})
     z_1 = _configuration(cache, c.coord_data.c1)
     z_2 = _configuration(cache, c.coord_data.c2)
@@ -131,15 +146,16 @@ end
 # CoordStack
 ####################################################################################################
 
-@inline __configuration!(cache::CacheBundle, c::CMC{<:CoordStack}) = nothing
-@inline __velocity!(cache::CacheBundle, c::CMC{<:CoordStack}) = nothing
-function __jacobian!(cache::CacheBundle, c::CMC{<:CoordStack})
-    J_ret = J_cache_view(cache, c)
+@inline __configuration!(cache::CacheBundle, mc::CMC{<:CoordStack}) = nothing
+@inline __velocity!(cache::CacheBundle, mc::CMC{<:CoordStack}) = nothing
+function __jacobian!(cache::CacheBundle, mc::CMC{<:CoordStack})
+    c = mc.coord_data
+    J_ret = J_cache_view(cache, mc)
     fill!(J_ret, zero(eltype(J_ret)))
-    J_ret_1 = _vms_jacobian_result_view(cache, J_ret, c.coord_data.c1)
-    J_ret_2 = _vms_jacobian_result_view(cache, J_ret, c.coord_data.c2)
-    J1 = _jacobian(cache, c.coord_data.c1)
-    J2 = _jacobian(cache, c.coord_data.c2)
+    J_ret_1 = _vms_jacobian_result_view(cache, J_ret, c.c1)
+    J_ret_2 = _vms_jacobian_result_view(cache, J_ret, c.c2)
+    J1 = _jacobian(cache, c.c1)
+    J2 = _jacobian(cache, c.c2)
     # Instead, do it manually
     Nc1 = size(J1, 1)
     J_ret_1[1:Nc1, :] .= J1
@@ -147,6 +163,19 @@ function __jacobian!(cache::CacheBundle, c::CMC{<:CoordStack})
     nothing
 end
 @inline __acceleration!(cache::CacheBundle, c::CMC{<:CoordStack}) = nothing
+
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:CoordStack})
+    f_view = f_cache_view(cache, mc)
+    f2 = f_cache_view(cache, cache[mc.coord_data.c2])
+    f1 = f_cache_view(cache, cache[mc.coord_data.c1])
+    for i in 1:length(f1)
+        f1[i] += f_view[i]
+    end
+    for i in 1:length(f2)
+        f2[i] += f_view[i+length(f1)]
+    end
+    nothing
+end
 
 function _configuration(cache::CacheBundle, c::CMC{<:CoordStack})
     z1 = _configuration(cache, c.coord_data.c1)
@@ -179,6 +208,15 @@ end
 @inline __jacobian!(cache::CacheBundle, c::CMC{<:CoordSlice}) = nothing
 @inline __acceleration!(cache::CacheBundle, c::CMC{<:CoordSlice}) = nothing
 
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:CoordSlice})
+    f_applied = f_cache_view(cache, mc)
+    f_ret = f_cache_view(cache, mc.coord_data.coord)
+    for (i, idx) in enumerate(mc.coord_data.idxs)
+        f_ret[idx] += f_applied[i]
+    end
+    nothing
+end
+
 function _configuration(cache::CacheBundle, c::CMC{<:CoordSlice})
     _configuration(cache, c.coord_data.coord)[c.coord_data.idxs]
 end
@@ -206,6 +244,7 @@ function __jacobian!(cache::CacheBundle, c::CMC{<:ConstCoord})
     nothing
 end
 @inline __acceleration!(cache::CacheBundle, c::CMC{<:ConstCoord}) = nothing
+@inline __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:ConstCoord}) = nothing
 
 _configuration(cache::CacheBundle, c::CMC{<:ConstCoord{Nc, Tc}}) where {Tc, Nc} = SVector{Nc, eltype(cache)}(c.coord_data.val)
 _velocity(cache::CacheBundle, c::CMC{<:ConstCoord{Nc, Tc}}) where {Tc, Nc} = zero(SVector{Nc, eltype(cache)})
@@ -224,6 +263,7 @@ function __jacobian!(cache::CacheBundle, c::CMC{<:ReferenceCoord})
     nothing
 end
 @inline __acceleration!(cache::CacheBundle, c::CMC{<:ReferenceCoord}) = nothing
+@inline __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:ReferenceCoord}) = nothing
 
 _configuration( cache::CacheBundle, c::CMC{<:ReferenceCoord{Nc, Tc}}) where {Tc, Nc} = SVector{Nc, eltype(cache)}(c.coord_data.val[])
 _velocity(      cache::CacheBundle, c::CMC{<:ReferenceCoord{Nc, Tc}}) where {Tc, Nc} = SVector{Nc, eltype(cache)}(c.coord_data.vel[])
@@ -246,6 +286,12 @@ function __jacobian!(cache::CacheBundle, c::CMC{<:JointSubspace})
     nothing
 end
 @inline __acceleration!(cache::CacheBundle, c::CMC{<:JointSubspace}) = nothing
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:JointSubspace}) 
+    f_view = f_cache_view(cache, mc)
+    @assert length(f_view) == 1
+    _apply_joint_force_to_frames!(cache, mc.coord_data.joint, f_view[1])
+    nothing
+end
 
 _configuration(cache::CacheBundle, c::CMC{<:JointSubspace}) = get_q(cache, c.coord_data.joint)
 _velocity(cache::CacheBundle, c::CMC{<:JointSubspace}) = get_q̇(cache, c.coord_data.joint)
@@ -364,7 +410,10 @@ function __jacobian!(cache::CacheBundle, c::CMC{<:FrameOrigin})
     nothing
 end
 __acceleration!(cache::CacheBundle, c::CMC{<:FrameOrigin}) = nothing
-__propagate_opspace_force!(cache::CacheBundle, c::CMC{<:FrameOrigin}) = get_frame_forces(cache)[c.coord_data.frameID] += f_cache_view(cache, c)
+function __propagate_opspace_force!(cache::CacheBundle, c::CMC{<:FrameOrigin})
+    get_frame_forces(cache)[c.coord_data.frameID] += f_cache_view(cache, c)
+    nothing
+end
 
 _configuration(cache::CacheBundle, c::CMC{<:FrameOrigin}) = origin(get_transform(cache, c.coord_data.frameID))
 _velocity(cache::CacheBundle, c::CMC{<:FrameOrigin}) = get_linear_vel(cache, c.coord_data.frameID)
@@ -439,30 +488,18 @@ function __acceleration!(cache::CacheBundle, cmc::CMC{<:QuaternionAttitude})
     α_cache_view(cache, cmc) .= bivector(ddrotor_tf)
 end
 
-# function __propagate_opspace_force!(cache::CacheBundle, cmc::CMC{<:QuaternionAttitude}, f)
-#     c = cmc.coord_data
-#     fID = c.frameID
+function __propagate_opspace_force!(cache::CacheBundle, cmc::CMC{<:QuaternionAttitude})
+    c = cmc.coord_data
+    rotor_wf = rotor(get_transform(cache, c.frameID))
+    rotor_tw = inv(c.target_rotation)
+    E_wf = Transforms.quaternion_derivative_propagation(rotor_wf)
+    E_tw = Transforms.quatmul_matrix(rotor_tw)
+    E = E_tw * E_wf
+    f_view = f_cache_view(cache, cmc)
 
-#     T⁰ᵃ = get_transform(cache, fID)
-#     R⁰ᵃ = rotor(T⁰ᵃ)
-#     ω⁰ᵃ = get_angular_vel(cache, fID)
-#     Ṙ⁰ᵃ = quaternion_derivative(R⁰ᵃ, ω⁰ᵃ)
-
-#     Rᵗ⁰ = inv(c.target_rotation)
-
-#     Ṙᵗᵃ = rotate(Rᵗ⁰, Ṙ⁰ᵃ, Val{false}()) # Dont normalize as this is a velocity
-
-#     ż = bivector(Ṙᵗᵃ)
-
-#     nothing
-
-    
-#     c = cmc.coord_data
-#     R⁰ᵃ = rotor(T⁰ᵃ)
-#     τ = cross(configuration(cache, cmc), f)
-#     get_frame_torques(cache)[fID] .+= τ
-#     nothing
-# end
+    τ = E' * SVector(0.0, f_view[1], f_view[2], f_view[3])
+    get_frame_torques(cache)[c.frameID] += τ
+end
 
 _configuration(cache::CacheBundle, cmc::CMC{<:QuaternionAttitude}) = SVector{length(cmc), eltype(cache)}(z_cache_view(cache, cmc))
 _velocity(cache::CacheBundle, cmc::CMC{<:QuaternionAttitude}) = SVector{length(cmc), eltype(cache)}(ż_cache_view(cache, cmc))
@@ -484,21 +521,20 @@ function __jacobian!(cache::CacheBundle, c::CMC{<:FrameAngularVelocity})
 end
 __acceleration!(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = nothing
 
-# _configuration(cache::MechanismCacheBundle, c::CMC{<:FrameAngularVelocity}) = rotor(transform(cache, c.coord_data.frameID))
-_velocity(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = get_angular_vel(cache, c.coord_data.frameID)
-_jacobian(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = J_cache_view(cache, c)
-_acceleration(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = _get_angular_acc(cache, c.coord_data.frameID)
-
 function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:FrameAngularVelocity})
     c = mc.coord_data
     f_view = f_cache_view(cache, mc)
     @assert length(f_view) == 3
-    f = f_cache_view(cache, mc)[SVector(1, 2, 3)] # Get the force applied to the coord as an SVector
+    f = f_cache_view(cache, mc)[SVector(1, 2, 3)] # Get the applied torque as an SVector
     fID = c.frameID
-    get_frame_torques(cache)[fID] += f
+    get_frame_torques(cache)[fID] += f # Apply torque to the frame
     nothing
 end
 
+# _configuration(cache::MechanismCacheBundle, c::CMC{<:FrameAngularVelocity}) = rotor(transform(cache, c.coord_data.frameID))
+_velocity(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = get_angular_vel(cache, c.coord_data.frameID)
+_jacobian(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = J_cache_view(cache, c)
+_acceleration(cache::CacheBundle, c::CMC{<:FrameAngularVelocity}) = _get_angular_acc(cache, c.coord_data.frameID)
 
 ####################################################################################################
 # CoordNorm
@@ -545,6 +581,20 @@ function __acceleration!(cache::CacheBundle, c::CMC{<:CoordNorm})
     αᵢ = (zₐ' * αₐ / zᵢ) + ((żₐ * zᵢ - zₐ * żᵢ)' * żₐ / zᵢ^2)
     α_cache_view(cache, c) .= αᵢ
 end
+
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:CoordNorm})
+    c = mc.coord_data
+    f_view = f_cache_view(cache, mc)
+    @assert length(f_view) == 1
+    f_ret = f_cache_view(cache, cache[c.coord])
+    zₐ = _configuration(cache, c.coord)    
+    zᵢ = _configuration(cache, mc)
+    for i in 1:length(f_ret)
+        f_ret[i] += f_view[1] * zₐ[i] / zᵢ[1]
+    end
+    nothing
+end
+
 
 _configuration(cache::CacheBundle, c::CMC{<:CoordNorm}) = SVector(z_cache_view(cache, c)[1])
 _velocity(cache::CacheBundle, c::CMC{<:CoordNorm}) = SVector(ż_cache_view(cache, c)[1])
@@ -626,6 +676,24 @@ function __acceleration!(cache::CacheBundle, cmc::CMC{<:RotatedCoord})
     nothing
 end
 
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:RotatedCoord})
+    # Sort out inputs
+    c = mc.coord_data
+    f_view = f_cache_view(cache, mc)
+    @assert length(f_view) == 3
+    f = f_view[SVector(1, 2, 3)] # Get the force applied to the coord as an SVector
+    f_ret = f_cache_view(cache, cache[c.world_frame_coord])
+    R = rotor(get_transform(cache, c.frameID))
+    z::SVector = _configuration(cache, c.world_frame_coord)
+
+    # Apply force R * f
+    f_ret .+= R * f
+    # Apply torque R * cross(z, f)
+    τ = cross(R*f, z)
+    get_frame_torques(cache)[c.frameID] += τ
+    nothing
+end
+
 _configuration(cache::CacheBundle, cmc::CMC{<:RotatedCoord}) = SVector{length(cmc)}(z_cache_view(cache, cmc))
 _velocity(cache::CacheBundle, cmc::CMC{<:RotatedCoord}) = SVector{length(cmc)}(ż_cache_view(cache, cmc))
 _jacobian(cache::CacheBundle, cmc::CMC{<:RotatedCoord}) = J_cache_view(cache, cmc)
@@ -675,8 +743,8 @@ function __jacobian!(cache::CacheBundle, cmc::CMC{<:UnrotatedCoord})
     J = J_cache_view(cache, cmc)
     fill!(J, zero(eltype(J))) # TODO do this once rather than every time
     J_ret = _vms_jacobian_result_view(cache, J, c.frameID)
-    # return RSz * -J_ωb + R⁻¹*J_z
-    # mul!(J, RSz, -J_ωb, R⁻¹, J_z)
+    # return RSz * -J_ωb + R*J_z
+    # mul!(J, RSz, -J_ωb, R, J_z)
     @assert length(c) == 3
     for i in axes(J_ret, 1), j in axes(J_ret, 2)
         J_ij = zero(eltype(J_ret))
@@ -708,6 +776,24 @@ function __acceleration!(cache::CacheBundle, cmc::CMC{<:UnrotatedCoord})
     t3 =      (cross(ẇ_b, R*z)) # Extra minus here compared to rotated coordinates
     t4 =       R*z̈
     α_cache_view(cache, cmc) .=  t1 + t2 + t3 + t4
+    nothing
+end
+
+function __propagate_opspace_force!(cache::CacheBundle, mc::CMC{<:UnrotatedCoord})
+    # Sort out inputs
+    c = mc.coord_data
+    f_view = f_cache_view(cache, mc)
+    @assert length(f_view) == 3
+    f = f_view[SVector(1, 2, 3)] # Get the force applied to the coord as an SVector
+    f_ret = f_cache_view(cache, cache[c.link_frame_coord])
+    R = rotor(get_transform(cache, c.frameID))
+    z::SVector = _configuration(cache, c.link_frame_coord)
+
+    # Apply force inv(R) * f
+    f_ret .+= inv(R) * f
+    # Apply torque z × (inv(R) * f)
+    τ = cross(R*z,  f)
+    get_frame_torques(cache)[c.frameID] += τ
     nothing
 end
 

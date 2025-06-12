@@ -481,8 +481,27 @@ end
 ===============================================================================#
 function inverse_dynamics! end
 
-function _inverse_dynamics!(bundle::MechRNEBundle) 
-    # Forward pass
+function _inverse_dynamics!(bundle::MechRNEBundle)   
+    _inverse_dynamics_forward_pass!(bundle)
+    _inverse_dynamics_zero!(bundle)
+    _inverse_dynamics_backward_pass_a!(bundle)
+    _inverse_dynamics_backward_pass_b!(bundle)
+    _inverse_dynamics_backward_pass_c!(bundle)
+    _inverse_dynamics_backward_pass_d!(bundle)
+    nothing
+end
+
+function _inverse_dynamics_set_inputs!(bundle, t, q, q̇, q̈, gravity)!
+    t_cache, q_cache, q̇_cache, q̈_cache, g_cache, u_cache, = get_t(bundle), get_q(bundle), get_q̇(bundle), get_q̈(bundle), get_gravity(bundle), get_u(bundle)
+
+    t_cache[] = t
+    copyto!(q_cache, q)
+    copyto!(q̇_cache, q̇)
+    copyto!(q̈_cache, q̈)
+    g_cache[] = gravity
+end
+
+function _inverse_dynamics_forward_pass!(bundle)
     _acceleration_kinematics!(bundle)
     m, cache = bundle.mechanism, bundle.cache
     compute_in_coordinate_order(coordinates(m)) do coord
@@ -490,60 +509,101 @@ function _inverse_dynamics!(bundle::MechRNEBundle)
         __velocity!(bundle, coord)
         __acceleration!(bundle, coord)
     end
-    
-    #
-    u = get_u(bundle)
-    frame_forces = get_frame_forces(bundle)
-    frame_torques = get_frame_torques(bundle)
+    nothing
+end
 
+function _inverse_dynamics_zero!(bundle)
+    u = get_u(bundle)
+    frame_forces, frame_torques = get_frame_forces(bundle), get_frame_torques(bundle)   
     # Zero all coordinate/frame forces and torques.
     fill!(bundle.cache.coord_cache.f, zero(eltype(bundle.cache.coord_cache.f)))
     fill!(frame_forces, zero(eltype(frame_forces)))
     fill!(frame_torques, zero(eltype(frame_torques)))
     fill!(u, zero(eltype(u)))
+    nothing
+end
 
-    # Backward pass
-    foreach(get_force_components(m)) do component # add forces for each component to coordinates
+function _inverse_dynamics_backward_pass_a!(bundle)
+    # Add forces for each component to coordinates
+    foreach(get_force_components(bundle.mechanism)) do component 
         _add_opspace_force!(bundle, component)
-        # @show f_cache_view(bundle, m[component.coord])
     end
-    # @show frame_forces
-    # println("Backward pass part 1")
-    compute_in_reverse_coordinate_order(coordinates(m)) do coord # propagate forces through coordinates
+    # Now the force for each coordinate with a component *directly* attached to it is set
+    nothing
+end
+
+function _inverse_dynamics_backward_pass_b!(bundle)
+    # Propagate forces through coordinates.
+    compute_in_reverse_coordinate_order(coordinates(bundle.mechanism)) do coord 
         __propagate_opspace_force!(bundle, coord)
-        # @show frame_forces
     end
-    # println("Backward pass part 2")
-    for (parent, child) in Iterators.reverse(m.rbtree.walk) # propagate forces through frames/joints
+    # Now, *frame* forces/torques contain the force/torque applied to each frame by the components
+    nothing
+end
+
+function _inverse_dynamics_backward_pass_c!(bundle)
+    frame_forces, frame_torques = get_frame_forces(bundle), get_frame_torques(bundle)   
+    # propagate forces through frames/joints
+    for (parent, child) in Iterators.reverse(bundle.mechanism.rbtree.walk) # TODO check this order is correct... might not work
         frame_forces[parent] += frame_forces[child]
-        δ = origin(get_transform(cache, CompiledFrameID(parent))) - origin(get_transform(cache, CompiledFrameID(child)))
-        frame_torques[parent] += frame_torques[child] - cross(δ, frame_forces[child])
-        # @show frame_forces
+        δ = origin(get_transform(bundle, CompiledFrameID(child))) - origin(get_transform(bundle, CompiledFrameID(parent)))
+        frame_torques[parent] += frame_torques[child] + cross(δ, frame_forces[child])
     end
+end
+
+function _inverse_dynamics_backward_pass_d!(bundle)
+    u = get_u(bundle)
+    frame_forces, frame_torques = get_frame_forces(bundle), get_frame_torques(bundle)   
     # Project forces to joints
-    foreach(joints(m)) do joint
+    foreach(joints(bundle.mechanism)) do joint
         length(q_idxs(joint)) == 0 && return nothing
         p, c = joint.parentFrameID, joint.childFrameID
-        tf_p, tf_c = get_transform(cache, p), get_transform(cache, c)
+        tf_p, tf_c = get_transform(bundle, p), get_transform(bundle, c)
         f_p, τ_p, f_c, τ_c = frame_forces[p], frame_torques[p], frame_forces[c], frame_torques[c]
         u[q_idxs(joint)] .= _project_forces_to_jointspace(joint.jointData, tf_p, tf_c, f_p, f_c, τ_p, τ_c)
         nothing
     end
-    nothing
 end
 
 function inverse_dynamics!(bundle::MechRNEBundle, t, q, q̇, q̈, gravity)
-    t_cache, q_cache, q̇_cache, q̈_cache, g_cache, u_cache, = 
-        get_t(bundle), get_q(bundle), get_q̇(bundle), get_q̈(bundle), get_gravity(bundle), get_u(bundle)
-
-    t_cache[] = t
-    copyto!(q_cache, q)
-    copyto!(q̇_cache, q̇)
-    copyto!(q̈_cache, q̈)
-    g_cache[] = gravity
+    _inverse_dynamics_set_inputs!(bundle, t, q, q̇, q̈, gravity)
     _inverse_dynamics!(bundle)
+    get_u(bundle)
+end
 
-    u_cache
+function _RNE_inertance_matrix!(M::Matrix, bundle::MechRNEBundle, t, q)
+    N = ndof(bundle.mechanism)
+    @assert size(M) == (N, N)
+
+    q̇ = get_q̇(bundle)
+    q̈ = get_q̈(bundle)
+    g = get_gravity(bundle)[]
+    for j = 1:N
+        # Zero velocity and gravity
+        fill!(q̇, zero(eltype(q̇)))
+        g = zero(g)
+        # Set acceleration for one joint
+        fill!(q̈, zero(eltype(q̈)))
+        q̈[j] = 1.0
+        # Compute inverse dynamics, on inertance/generic components only.
+        u = begin
+            _inverse_dynamics_set_inputs!(bundle, t, q, q̇, q̈, g)
+            _inverse_dynamics_forward_pass!(bundle)
+            _inverse_dynamics_zero!(bundle)
+            # WARNING any generic components which applies a force other than due
+            # to an inertance will break this computation.
+            inertance_components = get_inertance_components(bundle.mechanism)
+            foreach(inertance_components) do component 
+                _add_opspace_force!(bundle, component)
+            end
+            _inverse_dynamics_backward_pass_b!(bundle)
+            _inverse_dynamics_backward_pass_c!(bundle)
+            _inverse_dynamics_backward_pass_d!(bundle)
+            get_u(bundle)
+        end
+        M[:, j] .= u
+    end
+    M
 end
 
 

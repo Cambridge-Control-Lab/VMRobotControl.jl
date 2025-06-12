@@ -19,7 +19,7 @@ struct CompiledCoord{C<:CoordinateData}
     cache_idxs::UnitRange{Int}
 end
 
-Base.show(io::IO, ::Type{<:CompiledCoord{C}}) where C = print(io, "CompiledCoord{$C}")
+# Base.show(io::IO, ::Type{<:CompiledCoord{C}}) where C = print(io, "CompiledCoord{$C}")
 
 """
     CompiledCoordID{C}

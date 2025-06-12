@@ -359,10 +359,8 @@ Add opspace force `f` to the cache for coordinate `c`.
 @inline function _add_opspace_force!(bundle::CacheBundle, c::C) where C<:ComponentData
     @assert hasfield(C, :coord) "Component '$c' does not have a field 'coord'. If this is a valid component, please implement `_add_opspace_force!` for it."
     f::SVector = opspace_force(bundle, c)
-    coord_id = c.coord
-    coord = bundle[coord_id]
-    f_cache_view(bundle, coord) .-= f # f is negated, due to the definition of bias forces. e.g. If a spring opspace force is Kz
-    nothing
+    f_view = f_cache_view(bundle, bundle[c.coord])
+    f_view .-= f # f is negated, due to the definition of bias forces. e.g. If a spring opspace force is Kz
 end
 
 function _opspace_force(cache::CacheBundle, c::ComponentData)

@@ -1,7 +1,7 @@
 {
     "rson_version": "0.1.0",
     "type": "mechanism",
-    "name": "panda",
+    "name": "panda_veterinarian",
     "frames": [
         "root_frame",
         "L1_frame",
@@ -328,49 +328,49 @@
             "type": "mesh",
             "frame": "root_frame",
             "material": "panda_white",
-            "filename": "./meshes/visual/link0.obj"
+            "filename": "./meshes/visual/link0.dae"
         },
         "L1_mesh": {
             "type": "mesh",
             "frame": "L1_frame",
             "material": "panda_white",
-            "filename": "./meshes/visual/link1.obj"
+            "filename": "./meshes/visual/link1.dae"
         },
         "L2_mesh": {
             "type": "mesh",
             "frame": "L2_frame",
             "material": "panda_white",
-            "filename": "./meshes/visual/link2.obj"
+            "filename": "./meshes/visual/link2.dae"
         },
         "L3_mesh": {
             "type": "mesh",
             "frame": "L3_frame",
             "material": "panda_white",
-            "filename": "./meshes/visual/link3.obj"
+            "filename": "./meshes/visual/link3.dae"
         },
         "L4_mesh": {
             "type": "mesh",
             "frame": "L4_frame",
             "material": "panda_white",
-            "filename": "./meshes/visual/link4.obj"
+            "filename": "./meshes/visual/link4.dae"
         },
         "L5_mesh": {
             "type": "mesh",
             "frame": "L5_frame",
             "material": "panda_white",
-            "filename": "./meshes/visual/link5.obj"
+            "filename": "./meshes/visual/link5.dae"
         },
         "L6_mesh": {
             "type": "mesh",
             "frame": "L6_frame",
             "material": "panda_white",
-            "filename": "./meshes/visual/link6.obj"
+            "filename": "./meshes/visual/link6.dae"
         },
         "L7_mesh": {
             "type": "mesh",
             "frame": "L7_frame",
             "material": "panda_white",
-            "filename": "./meshes/visual/link7.obj"
+            "filename": "./meshes/visual/link7.dae"
         },
         "frame": {
             "type": "mesh",
