@@ -120,6 +120,7 @@ class IPCManager:
                 time.sleep(0.0)
                 command_socket, (remote_addr, remote_port) = tcp_server.accept()
                 print(f"Connection from {remote_addr}:{remote_port}")
+                time.sleep(0.5)
                 break
             except socket.timeout:
                 print("Timeout waiting for connection, retrying.")
