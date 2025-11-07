@@ -186,15 +186,21 @@ dynamic components.
 """
 struct Mechanism{T}
     name::String
+    from_path::Union{Nothing, String}
     frames::Vector{String}
     # Must be ordered so that the order of the joints is preserved, i.e. the order of 
     # q, q̇, τ, etc. matches the order of the joints added or (in the urdf/rson file).
     joints::OrderedDict{String, MechanismJoint{<:AbstractJointData{T}, String}} 
     coordinates::Dict{String, CoordinateData}
     components::Dict{String, ComponentData{T}}
-    function Mechanism{T}(name::AbstractString; with_root_frame::Bool = true) where T
+    function Mechanism{T}(
+        name::AbstractString;
+        from_path=nothing,
+        with_root_frame::Bool = true
+    ) where T
         m = new{T}(
-            name, 
+            name,
+            from_path,
             String[], 
             OrderedDict{String, MechanismJoint{<:AbstractJointData{T}, String}}(),
             Dict{String, CoordinateData}(),
@@ -203,7 +209,7 @@ struct Mechanism{T}
         with_root_frame && add_frame!(m, "root_frame")
         m
     end
-    function Mechanism(name::AbstractString; with_root_frame::Bool = true)
+    function Mechanism(name::AbstractString; from_path=nothing, with_root_frame::Bool = true)
         error("Please specify the floating point type of the mechanism, e.g. Mechanism{Float64}('$name')")
     end
 end
@@ -255,25 +261,22 @@ See also [`Mechanism`](@ref), [`add_coordinate!`](@ref), [`add_component!`](@ref
 """
 struct VirtualMechanismSystem{T}
     name::String
+    from_path::Union{Nothing, String}
     robot::Mechanism{T}
     virtual_mechanism::Mechanism{T}
     coordinates::Dict{String, CoordinateData}
     components::Dict{String, Union{Storage{T}, Dissipation{T}}}
-    function VirtualMechanismSystem{T}(name::String) where T
+    function VirtualMechanismSystem{T}(name::String; from_path=nothing) where T
         robot = Mechanism{T}("$(name)_robot")
         virtual_mechanism = Mechanism{T}("$(name)_virtual_mechanism")
-        new{T}(name, robot, virtual_mechanism, Dict(), Dict())
+        new{T}(name, from_path, robot, virtual_mechanism, Dict(), Dict())
     end
-    function VirtualMechanismSystem(name::String, robot::Mechanism{T}) where T
+    function VirtualMechanismSystem(name::String, robot::Mechanism{T}; from_path=nothing) where T
         virtual_mechanism = Mechanism{T}("$(name)_virtual_mechanism")
-        new{T}(name, robot, virtual_mechanism, Dict(), Dict())
+        new{T}(name, from_path, robot, virtual_mechanism, Dict(), Dict())
     end
-    function VirtualMechanismSystem(name::String, robot::Mechanism{T}, virtual_mechanism::Mechanism{T}) where T
-        new{T}(name, robot, virtual_mechanism, Dict(), Dict())
-    end
-
-    function VirtualMechanismSystem(name::String, robot::Mechanism{T}, virtual_mechanism::Mechanism{T}, Nr) where T
-        error("Doing a reference in this way is no longer supported")
+    function VirtualMechanismSystem(name::String, robot::Mechanism{T}, virtual_mechanism::Mechanism{T}; from_path=nothing) where T
+        new{T}(name, from_path, robot, virtual_mechanism, Dict(), Dict())
     end
 end
 

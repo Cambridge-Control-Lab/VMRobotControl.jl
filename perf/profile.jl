@@ -8,7 +8,6 @@ import VMRobotControl.Hessians.ForwardDiff: ≺
 using VMRobotControl.DifferentialEquations
 
 using Random
-using Profile
 using InteractiveUtils: @code_warntype
 using LinearAlgebra
 using BenchmarkTools

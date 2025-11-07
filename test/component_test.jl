@@ -46,14 +46,6 @@ function _test_component(component, cache, test_opspace_force, test_inertance, t
     # @test @allocations(VMRobotControl._wrench(c, precomp)) == 0
     test_inertance &&       @test inertance_matrix_allocs == 0
     test_stored_energy &&   @test stored_energy_allocs  == 0
-    
-    # if generalized_force_allocs > 0
-    #     Profile.Allocs.clear()
-    #     Profile.Allocs.@profile sample_rate=1 generalized_force(c, precomp)
-    #     PProf.Allocs.pprof()
-    #     @code_warntype generalized_force(c, precomp)
-    #     return () -> generalized_force(c, precomp)
-    # end
     nothing
 end
 
@@ -105,11 +97,8 @@ function test_components()
 
     @testset "Component collections" begin
         f = test_component(ComponentCollection(energy_storing_components), false, false, true)
-        # isnothing(f) || return f
         f = test_component(ComponentCollection(inerting_components), false, true, false)
-        # isnothing(f) || return f
         f = test_component(ComponentCollection(all_components), false, false, false)
-        # isnothing(f) || return f
     end
 end
 

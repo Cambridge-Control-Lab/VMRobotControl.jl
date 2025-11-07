@@ -12,7 +12,6 @@ using ForwardDiff: Dual, Tag, Partials
 import ForwardDiff: ≺
 using GLMakie
 using LinearAlgebra
-using Profile
 using Random
 using VMRobotControl
 using StaticArrays
@@ -29,7 +28,6 @@ function create_franka()
 end
 
 function runbenchmarks(suite)
-    Profile.clear_malloc_data()
     overhead = BenchmarkTools.estimate_overhead()
     Random.seed!(1)
     results = run(suite, verbose=true, overhead=overhead, gctrial=false)

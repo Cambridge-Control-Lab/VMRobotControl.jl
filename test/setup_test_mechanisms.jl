@@ -81,8 +81,8 @@ systems = let
         next!(p)
     end
     urdf_parser_cfg = URDFParserConfig(;parse_visuals=false, suppress_warnings=true)
-    for urfd in urdfs
-        push!(systems, parseURDF(urfd, urdf_parser_cfg))
+    for urdf in urdfs
+        push!(systems, parseURDF(urdf, urdf_parser_cfg))
         next!(p)
     end
     systems

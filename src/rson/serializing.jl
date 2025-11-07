@@ -1,21 +1,3 @@
-# TODO this is broken and needs work
-
-# function serialize(mechanism::Mechanism, filename)
-#     _, ext = splitext(filename);
-
-#     if ext == ".rson"
-#         ;
-#     elseif ext == ""
-#         filename += ".rson"
-#     else
-#         @warn("Writing mechanism to file with file extension '$(ext)', instead of '.rson'");
-#     end
-
-#     open(filename,"w") do f
-#         JSON.print(f, serialize_mechanism(mechanism))
-#     end
-# end
-
 """
     serializeRSON(filepath, m::Union{Mechanism, VirtualMechanismSystem})
 
@@ -313,8 +295,8 @@ function serialize_component(v::Visual)
             "type" => "cylinder",
             "frame" => v.frame,
             "material" => jsonify(v.color),
-            "radius" => v.geometry.radius,
-            "length" => norm(v.geometry.origin - v.origin.extremity)
+	    "radius" => radius(v.geometry),
+            "length" => norm(v.geometry.origin - v.geometry.extremity)
         )
     elseif v.geometry isa Sphere 
         OrderedDict(

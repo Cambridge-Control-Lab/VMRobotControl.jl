@@ -22,15 +22,16 @@ Configuration for the RSON parser.
 """
 @kwdef mutable struct RSONParserConfig    
     # Options
+    rson_path::Union{Nothing, String}=nothing
     element_type::Type=Float64
     parse_visuals::Bool=true
     error_on_not_supported::Bool=false
     error_on_not_recognized::Bool=true
     suppress_warnings::Bool=false
     default_material::RGBA=RGBA(0.8, 0.8, 0.8, 1.0)
-
+     
+    # State
     # Used in parsing, and also `returned' by the parser, in the config after parsing
-    rson_path::Union{Nothing, String}=nothing
     rson_version::Union{Nothing, Tuple{Int, Int, Int}}=nothing
     named_materials::Dict{String, RGBA}=Dict()
 
@@ -38,8 +39,7 @@ Configuration for the RSON parser.
     name_stack::Vector{String} = [] 
 end
 
-function reset_rson_parser_config_return_values!(cfg)
-    cfg.rson_path = nothing
+function reset_rson_parser_config_state!(cfg)
     cfg.rson_version = nothing
     cfg.named_materials = Dict()
     empty!(cfg.name_stack)
@@ -175,7 +175,7 @@ function parseRSONfile(
         cfg::RSONParserConfig=RSONParserConfig()
     )
     dict = JSON.parsefile(filepath; use_mmap=false, dicttype=OrderedDict)
-    reset_rson_parser_config_return_values!(cfg)
+    reset_rson_parser_config_state!(cfg)
     cfg.rson_path = filepath
     _parseRSON(dict, cfg)
 end
@@ -192,7 +192,7 @@ function parseRSONString(
         cfg::RSONParserConfig=RSONParserConfig()
     )
     dict = JSON.parse(rsonstr, dicttype=OrderedDict)
-    reset_rson_parser_config_return_values!(cfg)
+    reset_rson_parser_config_state!(cfg)
     _parseRSON(dict, cfg)
 end
 
@@ -200,7 +200,7 @@ function parseRSONDict(
         json_dict::AbstractDict,
         cfg::RSONParserConfig=RSONParserConfig()
     )
-    reset_rson_parser_config_return_values!(cfg)
+    reset_rson_parser_config_state!(cfg)
     _parseRSON(json_dict, cfg)
 end
 
@@ -209,7 +209,7 @@ function parseRSON(
         rsonpath,
         cfg::RSONParserConfig=RSONParserConfig()
     )
-    reset_rson_parser_config_return_values!(cfg)
+    reset_rson_parser_config_state!(cfg)
     cfg.rson_path = rsonpath
     _parseRSON(json_dict, cfg)
 end
@@ -252,7 +252,7 @@ function parse_mechanism(data, ::Type{T}, cfg) where T
         with_name_stack(name, cfg) do
             version_string = getField(data, "rson_version", JSON_STR, cfg; default=nothing) # 
 
-            mechanism = Mechanism{T}(name; with_root_frame=false)
+            mechanism = Mechanism{T}(name; from_path=cfg.rson_path, with_root_frame=false)
             _type = expectField(data, S_TYPE, JSON_STR, cfg)
             @assert _type == S_MECHANISM # This should always be the case
             parseOptionalArray!((mechanism, ), data, S_FRAMES, parseNewFrame!, cfg)
@@ -289,7 +289,7 @@ function parse_vms(data, ::Type{T}, cfg) where T
         vm_data = expect("virtual_mechanism", Union{JSON_STR, JSON_OBJECT})
         robot = parse_mechanism(robot_data, T, cfg)
         vm = parse_mechanism(vm_data, T, cfg)
-        vms = VirtualMechanismSystem(name, robot, vm)
+        vms = VirtualMechanismSystem(name, robot, vm; from_path=cfg.rson_path)
         
         parseOptionalNamedElements!((vms,), data, S_COORDINATES, _parseCoordDefinition!, cfg)
         parseOptionalNamedElements!((vms,), data, S_COMPONENTS, parseComponent!, cfg)

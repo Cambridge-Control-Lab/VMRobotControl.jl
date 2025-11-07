@@ -26,7 +26,7 @@ to named materials).
 - `named_materials::Dict{String, RGBA}`: Named materials to use for visuals, default `Dict()`.
 """
 @kwdef mutable struct URDFParserConfig
-    urdf_path::String=""
+    urdf_path::Union{Nothing, String}=nothing
     element_type::Type=Float64
     parse_visuals::Bool=true
     error_on_not_supported::Bool=false
@@ -61,7 +61,7 @@ end
 
 function parseURDF(cfg::URDFParserConfig)
     doc = readxml(cfg.urdf_path)
-    parseURDF(doc, cfg)    
+    parseURDF(doc, cfg)
 end
 
 """
@@ -104,7 +104,7 @@ end
 
 function parse_robot(robot, cfg)
     name = robot["name"]
-    mechanism = Mechanism{Float64}(name; with_root_frame=false)
+    mechanism = Mechanism{Float64}(name; from_path=cfg.urdf_path, with_root_frame=false)
     cfg.add_floating_base && error("Floating base not implemented yet.")
 
     for node in eachelement(robot)

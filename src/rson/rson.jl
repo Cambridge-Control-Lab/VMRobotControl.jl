@@ -18,7 +18,8 @@ using LinearAlgebra:
     Symmetric,
     issymmetric,
     isposdef,
-    normalize
+    normalize,
+    norm
 using 
     OrderedCollections,
     StaticArrays

@@ -1,7 +1,7 @@
 name = "VMRobotControl"
 uuid = "7d923390-5bb2-4b12-9c06-5b46ef7ec375"
-authors = ["Daniel Larby <dan_larby@hotmail.co.uk>"]
 version = "0.1.1"
+authors = ["Daniel Larby <dan_larby@hotmail.co.uk>"]
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"

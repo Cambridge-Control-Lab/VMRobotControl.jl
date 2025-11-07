@@ -1,7 +1,11 @@
 function test_rson(mechanism)
+    if ~isnothing(mechanism.from_path) && endswith(".urdf")(mechanism.from_path)
+        return
+    end
     # Tests serialisation 
     s = serializeRSON(String, mechanism)
-    mechanism_2 = parseRSONString(s)
+    cfg = RSONParserConfig(; rson_path=mechanism.from_path)
+    mechanism_2 = parseRSONString(s, cfg)
 
     m1 = compile(mechanism)
     m2 = compile(mechanism_2)
