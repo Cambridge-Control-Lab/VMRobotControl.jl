@@ -14,6 +14,7 @@ requires the joint, the parent frame, and the child frame, creating a
 
 # See also 
 Joint data types: [`Rigid`](@ref), [`Revolute`](@ref), [`Prismatic`](@ref), [`Rail`](@ref)
+['Helical'](@ref)
 
 # Developer Notes
 Each joint type must implement the following methods:
@@ -38,6 +39,8 @@ jointtype(j::AbstractJointData) = typeof(j) # Pretty display fallback
 
 A rigid joint, defined simply by a transformation from the child frame to the 
 parent frame.
+
+See also [`JointData`](@ref)
 """
 struct Rigid{T} <: AbstractJointData{T}
     transform::Transform{T}
@@ -57,6 +60,8 @@ RefValue, which you can set/getcan like: `joint.transform[]`.
 
 Be careful when changing the transform---if you are doing many simulations you
 may need to deepcopy to avoid aliasing.
+
+See also [`JointData`](@ref)
 """
 struct ReferenceJoint{T} <: AbstractJointData{T}
     transform::Base.RefValue{Transform{T}}
@@ -69,6 +74,8 @@ ReferenceJoint(tf::Transform{T}) where T = ReferenceJoint{T}(Ref(tf))
 A TimeFuncJoint represents a joint which has a transform which is a function
 of time: `f_tf(t)`. The derivatives `f_twist` and `f_vpa` must be provided, and
 checked, by the user.
+
+See also [`JointData`](@ref)
 """
 struct TimeFuncJoint{T, F1, F2, F3} <: AbstractJointData{T}
     f_tf::F1
@@ -90,7 +97,7 @@ child frame to the parent frame is `tf * Transform(AxisAngle(axis, q))`.
 
 `axis` must be normalized: `norm(axis)≈1.0`.
 
-See also [`Prismatic`](@ref), [`Rail`](@ref)
+See also [`JointData`](@ref)
 """
 function Revolute end
 
@@ -120,7 +127,7 @@ Represents a prismatic/sliding joint between two frames. The transform from the
 child frame to the parent frame is `tf * Transform(q*axis).` The axis does not
 have to be normalized.
 
-See also [`Revolute`](@ref), [`Rail`](@ref), 
+See also [`JointData`](@ref)
 """
 function Prismatic end
 
@@ -134,6 +141,39 @@ Prismatic(axis::SVector{3, T}) where T = PrismaticData(axis, zero(Transform{T}))
 
 function Random.rand(rng::AbstractRNG, ::Random.SamplerType{PrismaticData{T}}) where T
     PrismaticData(rand(rng, SVector{3, T}), rand(rng, Transform{T}))
+end
+
+"""
+    Helical(axis::SVector{3})
+    Helical(axis::SVector{3}, tf::Transform)
+
+Represents a helical/screw joint between two frames. The transform from the
+child frame to the parent frame is `tf * Transform(q*axis).` 
+
+The screw motion is is defined by a translation `q*lead*axis`, and a
+rotation by q around `axis`, as the lead of the screw is the distance 
+travelled per full rotation.
+
+To flip the direction of rotation, multiply both lead and axis by `-1`.
+
+As a result the "pitch" of the screw is |axis|, the lengthwise
+distance travelled for one rotation.
+
+See also [`JointData`](@ref)
+"""
+function Helical end
+
+struct HelicalData{T} <: AbstractJointData{T}
+    axis::SVector{3, T}
+    lead::T
+    transform::Transform{T}
+end
+
+Helical(axis::SVector{3, T}, tf::Transform{T}) where T = HelicalData(axis, tf)
+Helical(axis::SVector{3, T}) where T = HelicalData(axis, zero(Transform{T}))
+
+function Random.rand(rng::AbstractRNG, ::Random.SamplerType{HelicalData{T}}) where T
+    Helical(rand(rng, SVector{3, T}), rand(rng, Transform{T}))
 end
 
 """
@@ -209,6 +249,9 @@ velocity_size(::Type{<:TimeFuncJoint}) = 0
 config_size(::Type{<:RevoluteData}) = 1
 velocity_size(::Type{<:RevoluteData}) = 1
 
+config_size(::Type{<:HelicalData}) = 1
+velocity_size(::Type{<:HelicalData}) = 1
+
 config_size(::Type{<:PrismaticData}) = 1
 velocity_size(::Type{<:PrismaticData}) = 1
 
@@ -223,6 +266,7 @@ jointtype(::ReferenceJoint) = "Reference"
 jointtype(::TimeFuncJoint) = "TimeFunc"
 jointtype(::RevoluteData) = "Revolute"
 jointtype(::PrismaticData) = "Prismatic"
+jointtype(::HelicalData) = "Helical"
 jointtype(::RailData) = "Rail"
 jointtype(::SphericalData) = "Spherical"
 
@@ -262,6 +306,7 @@ end
 @inline _joint_relative_transform(joint::TimeFuncJoint,     t, qⱼ::SVector{0}) = joint.f_tf(t)
 @inline _joint_relative_transform(joint::RevoluteData,      t, qⱼ::SVector{1}) = joint.transform * Transform(AxisAngle(joint.axis, qⱼ[1], Val(false)))
 @inline _joint_relative_transform(joint::PrismaticData,     t, qⱼ::SVector{1}) = joint.transform * Transform(qⱼ[1] .* joint.axis)
+@inline _joint_relative_transform(joint::HelicalData,       t, qⱼ::SVector{1}) = joint.transform * Transform((qⱼ[1] * joint.lead)  .* joint.axis) * AxisAngle(joint.axis, qⱼ[1])
 @inline _joint_relative_transform(joint::RailData,          t, qⱼ::SVector{1}) = joint.transform * Transform(spline_position(qⱼ[1] / joint.scaling, joint.spline))
 @inline function spherical_joint_rotor(q::SVector{3})
     # q = θB

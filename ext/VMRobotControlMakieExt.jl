@@ -214,7 +214,10 @@ end
 
 function Makie.plot!(plot::JointSketch{Tuple{C, J}}) where {C<:MechanismCacheBundle, J}
     (; cache, jointID) = plot
-    @assert J <: VMRobotControl.CompiledJointID
+    if ~(J <: VMRobotControl.CompiledJointID)
+        # Check here for a nice error message
+        error("J does not inherit from CompiledJointID") 
+    end
     joint = cache[].mechanism[jointID[]]
     jointdata = joint.jointData
     parent_frame::CompiledFrameID = joint.parentFrameID
@@ -250,13 +253,13 @@ function Makie.plot!(plot::JointSketch{Tuple{C, J}}) where {C<:MechanismCacheBun
 end
 
 
-function _sketchjoint!(ax, joint::Rigid, cache::Observable; 
+function _sketchjoint!(ax, joint::Rigid, cache; 
                        scale, meshcolor, linecolor, linewidth, shading)
     pl = lines!(ax, [SVector(0., 0., 0.), joint.transform * SVector(0., 0., 0.)]; color=linecolor, linewidth)
     (pl,)
 end
 
-function _sketchjoint!(ax, joint::RevoluteData, cache::Observable; 
+function _sketchjoint!(ax, joint::RevoluteData, cache; 
                        scale, meshcolor, linecolor, linewidth, shading)
     origin = joint.transform * (joint.axis * 0.1 * scale)
     extremity = joint.transform * (joint.axis * -0.1 * scale)
@@ -267,7 +270,7 @@ function _sketchjoint!(ax, joint::RevoluteData, cache::Observable;
     (pm, pw,)
 end
 
-function _sketchjoint!(ax, joint::PrismaticData, cache::Observable; 
+function _sketchjoint!(ax, joint::PrismaticData, cache; 
                        scale, meshcolor, linecolor, linewidth, shading)
     ax_cross_Z = -cross(normalize(joint.axis), normalize(SVector(0., 0., 1.)))
     θ, rotation_axis = asin(norm(ax_cross_Z)), normalize(ax_cross_Z)
@@ -284,7 +287,7 @@ function _sketchjoint!(ax, joint::PrismaticData, cache::Observable;
     (pm, pw,)
 end
 
-function _sketchjoint!(ax, joint::RailData, cache::Observable;
+function _sketchjoint!(ax, joint::RailData, cache;
                        scale, meshcolor, linecolor, linewidth, shading)
     tf = joint.transform
     # TODO transform spline
@@ -299,7 +302,7 @@ function _sketchjoint!(ax, joint::RailData, cache::Observable;
     (s,)
 end
 
-function _sketchjoint!(ax, joint::ReferenceJoint, cache::Observable; 
+function _sketchjoint!(ax, joint::ReferenceJoint, cache; 
                        scale, meshcolor, linecolor, linewidth, shading)
     # TODO implement    
     ()
@@ -394,9 +397,8 @@ end
 # Robot Sketch
 ################################################################################
 
-Makie.@recipe(RobotSketch, cache) do scene
+Makie.@recipe(RobotSketch, robot) do scene
     Makie.Theme(
-        camera = :cam3d!,
         scale=1.0,
         meshcolor=:white,
         linecolor=:black,
@@ -405,9 +407,17 @@ Makie.@recipe(RobotSketch, cache) do scene
     )
 end
 
+function Makie.plot!(plot::RobotSketch{Tuple{C}}) where C<:Union{Mechanism, VirtualMechanismSystem}
+    @warn "Plotting a Mechanism of VirtualMechanismSystem. For speed, compile before plotting."
+    map!(robot -> new_kinematics_cache(compile(robot)), plot, [:robot], :kcache)
+    robotsketch!(plot, plot.kcache)
+end
+
+Makie.preferred_axis_type(plot::RobotSketch) = Makie.LScene
+
 # Plot robot with no visuals
 function Makie.plot!(plot::RobotSketch{Tuple{C}}) where C<:MechanismCacheBundle
-    (; cache) = plot
+    cache = plot.robot
 
     jointIDs = [jID for (_, jID) in cache[].mechanism.rbtree.joint_id_map]
 
@@ -441,7 +451,6 @@ end
 ################################
 Makie.@recipe(AnnotateFrames, cache) do scene
     Makie.Theme(
-        camera = :cam3d!,
         color = :black,
         align = (:left, :baseline),
         font = :regular,
@@ -487,16 +496,22 @@ end
 
 ################################
 
-Makie.@recipe(RobotVisualize, cache) do scene
+Makie.@recipe(RobotVisualize, robot) do scene
     Makie.Theme(
-        shading = Makie.MultiLightShading,
-        camera = :cam3d!,
-        transparency = false
+        shading = true,
     )
 end
 
+Makie.preferred_axis_type(plot::RobotVisualize) = Makie.LScene
+
+function Makie.plot!(plot::RobotVisualize{Tuple{C}}) where C<:Union{Mechanism, VirtualMechanismSystem}
+    @warn "Plotting a Mechanism of VirtualMechanismSystem. For speed, compile before plotting."
+    map!(robot -> new_kinematics_cache(compile(robot)), plot, [:robot], :kcache)
+    robotvisualize!(plot, plot.kcache)
+end
+
 function Makie.plot!(plot::RobotVisualize{Tuple{C}}) where C<:MechanismCacheBundle
-    (; cache) = plot
+    cache = plot.robot;
     vis = visuals(cache[].mechanism); 
     # isempty(vis) && error("No visuals to plot")
 
