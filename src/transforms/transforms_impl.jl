@@ -42,7 +42,8 @@ function transform(tf1::Transform{T1}, tf2::Transform{T2}) where {T1, T2}
 end
 
 function transform(tf::Transform{T1}, R::Rotor{T2}) where {T1, T2}
-    Transform(tf.origin, tf.rotor*R)
+    T_out = promote_type(T1, T2)
+    Transform{T_out}(tf.origin, tf.rotor*R)
 end
 
 function transform(R::Rotor{T1}, tf::Transform{T2}) where {T1, T2}

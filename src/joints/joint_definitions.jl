@@ -220,8 +220,6 @@ end
     Spherical()
     Spherical(tf::Transform)
 
-BROKEN. DOES NOT WORK YET.
-
 Represents a spherical joint between two frames. 
 
 See also [`Revolute`](@ref)
@@ -314,18 +312,11 @@ end
 @inline _joint_relative_transform(joint::PrismaticData,     t, qⱼ::SVector{1}) = joint.transform * Transform(qⱼ[1] .* joint.axis)
 @inline _joint_relative_transform(joint::HelicalData,       t, qⱼ::SVector{1}) = joint.transform * (AxisAngle(joint.axis, qⱼ[1]) * Transform((qⱼ[1] * joint.lead)  .* joint.axis))
 @inline _joint_relative_transform(joint::RailData,          t, qⱼ::SVector{1}) = joint.transform * Transform(spline_position(qⱼ[1] / joint.scaling, joint.spline))
-@inline function spherical_joint_rotor(q::SVector{3})
-    # q = θB
-    # θ = norm(q)
-    # half_θ = θ/2
-    a = half_θ = q' * q
-    s, c = sincos(a)
-    k = s ≈ zero(s) ? oneunit(s) : s/a # Handle limit when half_θ -> 0
-    Rotor(c, k * q)
-end
 @inline function _joint_relative_transform(joint::SphericalData, t, q::SVector{3})
-    tf = Transform(spherical_joint_rotor(q))
-    return joint.transform * tf
+    Q = norm(q)
+    sinc = Q ≈ zero(Q) ? one(Q) : sin(Q) / Q
+    rotor = Rotor(cos(Q), sinc * q)
+    return joint.transform * rotor
 end
 
 ######################
@@ -413,34 +404,16 @@ end
 
 @inline
 function _joint_relative_twist(joint::SphericalData, t, q::SVector{3}, q̇::SVector{3})
-    # rs = spherical_joint_rotor(q)
-    # rj = rotor(joint.transform)
+    Q = norm(q)
+    sinc = Q ≈ zero(Q) ? one(Q) : sin(Q) / Q
+    rot = Rotor(cos(Q), sinc * q)
 
-    a = half_θ = q' * q
-    ȧ = 2 * q' * q̇
+    Q̇ = (q' * q̇) / Q
+    sinċ = Q ≈ zero(Q) ? zero(Q) : Q̇ * (cos(Q) * Q - sin(Q)) / (Q^2)
+    drot_dt = Rotor(-sin(Q) * Q̇, q * sinċ + sinc * q̇, Val{false}())
 
-    s, c = sincos(a)
-    ṡ, ċ = ȧ * c, -ȧ * s
-
-    k = s ≈ zero(s) ? oneunit(s) : s/a # Handle limit when half_θ -> 0
-    k̇ = s ≈ zero(s) ? zero(s) : ṡ/a - ȧ*s/(a^2)  # ṡa⁻¹ - ȧ s a⁻²
-
-    B = k * q
-    Ḃ = k̇ * q + k * q̇
-
-    r = Rotor(c, B) 
-    @assert r == spherical_joint_rotor(q)
-    ṙ = Rotor(ċ, Ḃ, Val(false))
-    # @show rs * (2 * q̇)
-    # @show rj * (2 * q̇)
-    # @show rs * rs * (2 * q̇)
-    # @show rj * rs * (2 * q̇)
-
-    # ṙ = 1/2 * ω * r
-    # ω = 2 ṙ * r⁻¹
-    δω = 2 * bivector(Transforms.rotate(r, ṙ, Val{false}()))
-    # δω = rs * (2 * q̇)
-
+    δω = rotor(joint.transform) * (angular_velocity_prematrix(rot) * rotor_to_svector(drot_dt))
+    # δω = rotor(joint.transform) * angular_velocity(rot, rotor_to_svector(drot_dt))
     Twist(zero(δω), δω)
 end
 
@@ -633,9 +606,17 @@ function _jacobian_columns(joint::RailData, tfₚ::Transform, final_tf::Transfor
 end
 
 function _jacobian_columns(joint::SphericalData, tfₚ::Transform, final_tf::Transform, t, q::SVector{3})
-    # r = _joint_relative_transform(joint, t, q)
+    Q = norm(q)
+    sinc = Q ≈ zero(Q) ? one(Q) : sin(Q) / Q
+    rot = Rotor(cos(Q), sinc * q)
+
+    JQ = (q') / Q
+    Jsinc = Q ≈ zero(Q) ? zero(JQ) : JQ * (cos(Q) * Q - sin(Q)) / (Q^2)
+    Jscalar = -sin(Q)*JQ
+    Jbivector = q * Jsinc + sinc * SMatrix{3, 3}(1, 0, 0, 0, 1, 0, 0, 0, 1)
+
     R = rotation_matrix(rotor(tfₚ) * rotor(joint.transform))
-    Jw_cols = 2 * R
+    Jw_cols = R * angular_velocity_prematrix(rot) * vcat(Jscalar, Jbivector)
     Jo_cols = zero(Jw_cols)
     Jo_cols, Jw_cols
 end
@@ -666,9 +647,6 @@ function autodiff_jacobian_column(jointdata, tf_parent, tf_child, tf_final, t, q
         return Jo_col, Jw_col
     else
         T, N = eltype(q_joint), length(q_joint)
-        @show diffresult
-        @show jacobian(diffresult)
-        @show typeof(jacobian(diffresult))
         Jo_cols = SMatrix{3, N, T}(origin(jacobian(diffresult)))
         Jr_cols = SMatrix{4, N, T}(rotor(jacobian(diffresult)))
         Jw_cols = quatmul_geodual_bivector_matrix(rotor(tf_final)) * Jr_cols

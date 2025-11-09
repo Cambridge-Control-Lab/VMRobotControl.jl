@@ -45,7 +45,6 @@ function _test_single_joint(jointdata::AbstractJointData{T}, parent_tf, q, q̇) 
     twist_kinematic = joint_twist(jointdata, parent_tf, tf, parent_twist, t, q, q̇)
     @test isnan(twist_kinematic) == false
     @test twist_AD ≈ twist_kinematic
-    # isa(result, Test.Fail) && begin println("FAILURE....."); @show(jointdata, q, q̇) end
     
     vpa_kinematic = joint_vpa(jointdata, parent_tf, tf, parent_twist, twist_AD, parent_vpa, t, q, q̇, )
     @test isnan(vpa_kinematic) == false
@@ -287,6 +286,7 @@ mobile_jointtypes = [
     PrismaticData{Float64},
     HelicalData{Float64},
     RailData{Float64, VMRobotControl.CubicSpline{3, Float64}},
+    SphericalData{Float64}
 ]
 all_jointtypes = [
     RevoluteData{Float64},

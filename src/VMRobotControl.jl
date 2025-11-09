@@ -64,13 +64,15 @@ export # Joint constructors
     Prismatic,
     Helical,
     Rail,
+    Spherical,
     ReferenceJoint,
     TimeFuncJoint
 export # JointData types
     RevoluteData,
     PrismaticData,
     HelicalData,
-    RailData
+    RailData,
+    SphericalData
 export # Coordinates
     ConstCoord,    
     CoordDifference,

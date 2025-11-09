@@ -231,8 +231,9 @@ Base.:^(R::Rotor, p::Integer) = Base.power_by_squaring(R,p)
 
 # TODO Fix type strangeness here... we are using a rotor to represent a rotor derivative (hence not normalizing)
 function angular_velocity(r::Rotor, ṙ::SVector)
-    ṙ_rotor = Rotor(ṙ, Val(false)) # don't normalize
-    ω = -2 * bivector( rotate(r, ṙ_rotor, Val(false))  ) # don't normalize after rotating
+    error()
+    ṙ_rotor = Rotor(ṙ, Val{false}()) # don't normalize
+    ω = -2 * bivector( rotate(r, ṙ_rotor, Val{false}())  ) # don't normalize after rotating
     ω
 end
 # angular_velocity(r::Rotor, ṙ::SVector) = -2*(quatmultiply(rotor_to_svector(r),  ṙ)[SVector{3, Int}(2, 3, 4)])
