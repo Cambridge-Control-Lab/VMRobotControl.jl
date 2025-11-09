@@ -106,6 +106,16 @@ function serialize_jointdata(j::PrismaticData)
     )
 end
 
+function serialize_jointdata(j::HelicalData)
+    merge(
+        OrderedDict(
+            "type" => "helical",
+            "axis" => jsonify(j.axis),
+            "lead" => jsonify(j.lead),
+        ),
+        jsonify(j.transform)
+    )
+end
 
 function serialize_jointdata(j::Rigid)
     merge(
