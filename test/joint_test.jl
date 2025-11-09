@@ -285,6 +285,7 @@ end
 mobile_jointtypes = [
     RevoluteData{Float64},
     PrismaticData{Float64},
+    HelicalData{Float64},
     RailData{Float64, VMRobotControl.CubicSpline{3, Float64}},
 ]
 all_jointtypes = [

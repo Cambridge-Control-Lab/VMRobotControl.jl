@@ -1,7 +1,7 @@
 {
     "rson_version": "0.1.1",
     "type": "mechanism",
-    "name": "scara",
+    "name": "scara_helical",
     "frames": [
         "root_frame",
         "L1_frame",

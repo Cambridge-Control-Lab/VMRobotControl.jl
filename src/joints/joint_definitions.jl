@@ -104,7 +104,7 @@ function Revolute end
 struct RevoluteData{T} <: AbstractJointData{T}
     axis::SVector{3, T}
     transform::Transform{T}
-    function RevoluteData(a::SVector{3, T}, tf::Transform{T}) where T
+    function RevoluteData(a::SVector{3, T}, tf::Transform{T}) where T # TODO Breaking - add {T} here
         @assert norm(a) ≈ one(T) "Rotary joint axis '$a' must be normalized. `norm(a)=`$norm(a)."
         new{T}(a, tf)
     end
@@ -148,13 +148,15 @@ end
     Helical(axis::SVector{3}, tf::Transform)
 
 Represents a helical/screw joint between two frames. The transform from the
-child frame to the parent frame is `tf * Transform(q*axis).` 
+child frame to the parent frame is `tf * Transform(q*axis).` The axis must
+be normalized.
 
 The screw motion is is defined by a translation `q*lead*axis`, and a
 rotation by q around `axis`, as the lead of the screw is the distance 
 travelled per full rotation.
 
-To flip the direction of rotation, multiply both lead and axis by `-1`.
+To change from a counter-clockwise to a clockwise helix, flip the direction
+of the axis, and use a negative lead.
 
 As a result the "pitch" of the screw is |axis|, the lengthwise
 distance travelled for one rotation.
@@ -167,13 +169,17 @@ struct HelicalData{T} <: AbstractJointData{T}
     axis::SVector{3, T}
     lead::T
     transform::Transform{T}
+    function HelicalData{T}(axis::SVector{3, T}, lead::T, transform::Transform{T}) where T
+        @assert norm(axis) ≈ one(T) "Helical joint axis '$a' must be normalized. `norm(a)=`$norm(a)."
+        new{T}(axis, lead, transform)
+    end
 end
 
-Helical(axis::SVector{3, T}, tf::Transform{T}) where T = HelicalData(axis, tf)
-Helical(axis::SVector{3, T}) where T = HelicalData(axis, zero(Transform{T}))
+Helical(axis::SVector{3, T}, lead::T, tf::Transform{T}) where T = HelicalData{T}(axis, lead, tf)
+Helical(axis::SVector{3, T}, lead::T) where T = HelicalData{T}(axis, zero(Transform{T}))
 
 function Random.rand(rng::AbstractRNG, ::Random.SamplerType{HelicalData{T}}) where T
-    Helical(rand(rng, SVector{3, T}), rand(rng, Transform{T}))
+    Helical(normalize(rand(rng, SVector{3, T})), rand(rng, T), rand(rng, Transform{T}))
 end
 
 """
@@ -392,6 +398,13 @@ function _joint_relative_twist(joint::PrismaticData, t, q, q̇)
     Twist(δv, zero(δv))
 end
 @inline
+function _joint_relative_twist(joint::HelicalData, t, q, q̇)
+    axis = rotor(joint.transform) * joint.axis
+    δv = axis * joint.lead * q̇[1] # Translational
+    δω = axis * q̇[1] # Rotational
+    Twist(δv, δω)
+end
+@inline
 function _joint_relative_twist(joint::RailData, t, q, q̇)
     tangent = rotor(joint.transform) * spline_derivative(q[1]/joint.scaling, joint.spline)/joint.scaling
     δv = tangent * q̇[1]
@@ -489,7 +502,7 @@ function joint_relative_vpa(joint, t, q, q̇,)
 end
 @inline _joint_relative_vpa(j::Union{Rigid, ReferenceJoint}, t, q, q̇) = zero(SpatialAcceleration{eltype(q)})
 @inline _joint_relative_vpa(j::TimeFuncJoint, q, q̇, t) = j.f_vpa(t)
-@inline _joint_relative_vpa(j::Union{RevoluteData, PrismaticData}, t, q, q̇) = zero(SpatialAcceleration{eltype(q)})
+@inline _joint_relative_vpa(j::Union{RevoluteData, PrismaticData, HelicalData}, t, q, q̇) = zero(SpatialAcceleration{eltype(q)})
 @inline function _joint_relative_vpa(joint::RailData, t, q, q̇)
     dtangent = rotor(joint.transform) * spline_second_derivative(q[1]/joint.scaling, joint.spline) / (joint.scaling^2) 
     δv̇ = dtangent*q̇[1]^2
@@ -530,6 +543,12 @@ end
     axis = rotor(j.transform) * j.axis
     v̇ = axis * q̈[1]
     SpatialAcceleration(v̇, zero(v̇))
+end
+@inline function _joint_relative_acceleration(j::HelicalData, t, q, q̈)
+    axis = rotor(j.transform) * j.axis
+    v̇ = axis * j.lead * q̈[1]
+    ω̇ = axis * q̈[1]
+    SpatialAcceleration(v̇, ω̇)
 end
 @inline function _joint_relative_acceleration(j::RailData, t, q, q̈)
     tangent = rotor(j.transform) * spline_derivative(q[1]/j.scaling, j.spline)/j.scaling
@@ -597,6 +616,13 @@ function _jacobian_columns(joint::PrismaticData, tfₚ::Transform, final_tf::Tra
     axis = rotor(tfₚ) * rotor(joint.transform) * joint.axis
     Jo_col = axis
     Jo_col, zero(Jo_col)
+end
+
+function _jacobian_columns(joint::HelicalData, tfₚ::Transform, final_tf::Transform, t, q)
+    axis = rotor(tfₚ) * rotor(joint.transform) * joint.axis
+    Jo_col = axis * joint.lead
+    Jw_col = axis
+    Jo_col, Jw_col
 end
 
 function _jacobian_columns(joint::RailData, tfₚ::Transform, final_tf::Transform, t, q::SVector{1})
@@ -677,6 +703,13 @@ function _project_forces_to_jointspace(j::PrismaticData, tf_p::Transform{T}, tf_
     # Rotate axis to world frame, then dot with force
     axis = rotor(tf_c) * j.axis
     u = -dot(axis, f_c)
+    return SVector(u)
+end
+
+function _project_forces_to_jointspace(j::HelicalData, tf_p::Transform{T}, tf_c::Transform{T}, f_p::S, f_c::S, τ_p::S, τ_c::S) where {T, S<: SVector{3, T}} 
+    # Combination of revolute/prismatic 
+    axis = rotor(tf_p) * rotor(j.transform) * j.axis
+    u = -dot(axis, τ_c) - j.lead * dot(axis, f_c)
     return SVector(u)
 end
 

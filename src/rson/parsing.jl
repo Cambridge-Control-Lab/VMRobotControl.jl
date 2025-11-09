@@ -405,7 +405,7 @@ function parseJoint!(mechanism, name::String, data, cfg::RSONParserConfig)
             transform = parseTransformData(data, T, cfg)
             axis = parseAxis(expect("axis", Vector{Any}), T, cfg)
             lead = parseScalarValue(expect("lead", Float64), T, cfg)
-            jointdata = HelicalData(axis, lead, transform)
+            jointdata = Helical(axis, lead, transform)
         else
             rson_throw_exception("Unrecognised joint type '$(type)'", cfg)
         end
