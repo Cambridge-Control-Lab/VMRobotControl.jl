@@ -401,6 +401,11 @@ function parseJoint!(mechanism, name::String, data, cfg::RSONParserConfig)
             transform = parseTransformData(data, T, cfg)
             axis = parseAxis(expect("axis", Vector{Any}), T, cfg)
             jointdata = PrismaticData(axis, transform)
+        elseif type == "helical"
+            transform = parseTransformData(data, T, cfg)
+            axis = parseAxis(expect("axis", Vector{Any}), T, cfg)
+            lead = parseScalarValue(expect("lead", Float64), T, cfg)
+            jointdata = HelicalData(axis, lead, transform)
         else
             rson_throw_exception("Unrecognised joint type '$(type)'", cfg)
         end
@@ -806,6 +811,11 @@ function parseOptionalNamedElements!(args, data, field, parse_single!, cfg)
     nothing
 end
 
+function parseScalarValue(data, T, cfg)
+    return T(data)
+end
+
+# TODO rename parseParameterValue to something like "parsePosdefValue"
 function parseParameterValue(data::Real, T, cfg)
     data >= 0.0 || rson_throw_exception("Expected parameter value to be non-negative, got '$(data)'", cfg)
     T(data)

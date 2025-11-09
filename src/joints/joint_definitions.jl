@@ -306,7 +306,7 @@ end
 @inline _joint_relative_transform(joint::TimeFuncJoint,     t, qⱼ::SVector{0}) = joint.f_tf(t)
 @inline _joint_relative_transform(joint::RevoluteData,      t, qⱼ::SVector{1}) = joint.transform * Transform(AxisAngle(joint.axis, qⱼ[1], Val(false)))
 @inline _joint_relative_transform(joint::PrismaticData,     t, qⱼ::SVector{1}) = joint.transform * Transform(qⱼ[1] .* joint.axis)
-@inline _joint_relative_transform(joint::HelicalData,       t, qⱼ::SVector{1}) = joint.transform * Transform((qⱼ[1] * joint.lead)  .* joint.axis) * AxisAngle(joint.axis, qⱼ[1])
+@inline _joint_relative_transform(joint::HelicalData,       t, qⱼ::SVector{1}) = joint.transform * (AxisAngle(joint.axis, qⱼ[1]) * Transform((qⱼ[1] * joint.lead)  .* joint.axis))
 @inline _joint_relative_transform(joint::RailData,          t, qⱼ::SVector{1}) = joint.transform * Transform(spline_position(qⱼ[1] / joint.scaling, joint.spline))
 @inline function spherical_joint_rotor(q::SVector{3})
     # q = θB
