@@ -481,7 +481,26 @@ end
     δv̇ = dtangent*q̇[1]^2
     SpatialAcceleration(δv̇, zero(δv̇))
 end
-@inline _joint_relative_vpa(::SphericalData, t, q, q̇) = zero(SpatialAcceleration{eltype(q̇)})
+@inline function _joint_relative_vpa(j::SphericalData, t, q, q̇)
+    Q = norm(q)
+    Q̇ = (q' * q̇) / Q
+    Q̈ = (q̇' * q̇) / Q - (q' * q̇ ) * Q̇ / (Q^2)
+
+    sinc = Q ≈ zero(Q) ? one(Q) : sin(Q) / Q
+    sinċ = Q ≈ zero(Q) ? zero(Q) : Q̇ * (cos(Q) * Q - sin(Q)) / (Q^2)
+    sinc̈ = Q ≈ zero(Q) ? zero(Q) : Q̈ * (cos(Q) * Q - sin(Q)) / (Q^2) + Q̇^2 * (-Q^2 * sin(Q) - 2*Q*cos(Q) + 2*sin(Q))/(Q^3) 
+
+    rot = Rotor(cos(Q), sinc * q)
+    drot_dt = Rotor(-sin(Q) * Q̇, q * sinċ + sinc * q̇, Val{false}())
+    ddrot_dt = Rotor(
+        -sin(Q)*Q̈ - cos(Q)*Q̇^2, q * sinc̈ + 2*q̇*sinċ,
+        Val{false}()
+    )
+    δω = rotor(j.transform) * (angular_velocity_prematrix(rot) * rotor_to_svector(drot_dt))
+    δω̇ = rotation_matrix(rotor(j.transform)) * angular_velocity_prematrix(rot) * rotor_to_svector(ddrot_dt) + angular_velocity_prematrix(drot_dt) * rotor_to_svector(drot_dt)
+
+    SpatialAcceleration(zero(δω̇), δω̇)
+end
 
 
 ######################
