@@ -74,9 +74,6 @@ function test_coordinates(m::Union{CompiledMechanism, CompiledVirtualMechanismSy
     dynamics!(cache2, t+dt,   q .+ (dt .* q̇),   q̇, gravity, u)
     dynamics!(cache3, t+2*dt, q .+ ((2*dt).*q̇), q̇, gravity, u)
 
-    # N_frames = num_frames(m)
-    # frame_selection = sample(rng, 1:N_frames, min(N_frames, 5); replace=false, ordered=true)
-    
     randvec3() = randn(rng, SVector{3, Float64})
 
     for tsc in VMRobotControl.coordinates(m)
@@ -85,48 +82,5 @@ function test_coordinates(m::Union{CompiledMechanism, CompiledVirtualMechanismSy
             @testset "$(coord_type)" test_coordinate(coord_vec, dt, cache1, cache2, cache3, q̇)
         end
     end
-    # TODO maybe randomly generate coordinates and add to mechanism for more thorough testing
-    # p1, p2, p3, p4 = randvec3(), randvec3(), randvec3(), randvec3()
-    # @testset "FrameOrigin" begin
-    #     frame_origin_coords = [FrameOrigin(i, p1) for i in frame_selection]
-    #     test_coordinate(frame_origin_coords, dt, cache1, cache2, cache3, q̇)
-    # end
-    # @testset "FrameAngularVelocity" begin
-    #     frame_angular_velocity_coords = [FrameAngularVelocity(i) for i in frame_selection]
-    #     test_coordinate(frame_angular_velocity_coords, dt, cache1, cache2, cache3, q̇; skip_configuration=true)
-    # end
-    # @testset "QuaternionAttitude" begin
-    #     target_r = rand(rng, Rotor{Float64})
-    #     quat_coords = [QuaternionAttitude(i, target_r) for i in frame_selection]
-    #     test_coordinate(quat_coords, dt, cache1, cache2, cache3, q̇; skip_configuration=false)
-    # end
-    # @testset "CartesianOperationSpace" begin
-    #     cartestian_coords = [CartesianOperationSpace(i, p1, p2) for i in frame_selection]
-    #     test_coordinate(cartestian_coords, dt, cache1, cache2, cache3, q̇)
-    # end
-    # @testset "CoordDifference" begin
-    #     cartesian_diff_coords = [FrameOrigin(i) -  FrameOrigin(rand(rng, frame_selection)) for i in frame_selection]
-    #     test_coordinate(cartesian_diff_coords, dt, cache1, cache2, cache3, q̇)
-    # end
-    # @testset "LinkFrameCoordinate" begin
-    #     linkframe_coords = [
-    #         begin
-    #             world_frame_coord = CartesianOperationSpace(i, p1, p2) - CartesianOperationSpace(rand(rng, frame_selection), p3, p4)
-    #             LinkFrameCoordinate(world_frame_coord, i)
-    #         end 
-    #         for i in frame_selection
-    #     ]
-    #     test_coordinate(linkframe_coords, dt, cache1, cache2, cache3, q̇)
-    # end
-    # @testset "JointSpace" begin
-    #     js_coord = JointSpace{ndof(m)}()
-    #     test_coordinate([js_coord], dt, cache1, cache2, cache3, q̇)
-    # end
-    # @testset "JointSubspace" begin
-    #     joint_dict = m.rbtree.joint_dict
-    #     motive_joints = [v for (k, v) in joint_dict if velocity_size(v) > 0]
-    #     jss_coords = map(JointSubspace, motive_joints)
-    #     test_coordinate(jss_coords, dt, cache1, cache2, cache3, q̇)
-    # end
-    # nothing
+    nothing
 end

@@ -100,12 +100,15 @@ function _test_double_joint(jd1::JD1, jd2::JD2, q₁, q₂, q̇₁, q̇₂) wher
     tf2 = joint_transform(jd2, tf1, t, q₂)
     twist2 = joint_twist(jd2, tf1, tf2, twist1, t, q₂, q̇₂)
     vpa2 = joint_vpa(jd2, tf1, tf2, twist1, twist2, vpa1, t, q₂, q̇₂)
-    
+
+    # Compile time constant indices
+    N1 = length(q₁)
+    N2 = length(q₂)
+    q₁_idxs = SVector{N1, Int}(1:N1); 
+    q₂_idxs = SVector{N2}(N1+1:N1+N2)
     dr = my_hessian(vcat(q₁, q₂)) do q
-        N1 = length(q₁) # Compile time constant
-        N2 = length(q₂)
-        q1 = q[SVector{N1, Int}(1:N1)]
-        q2 = q[SVector{N2}(N1+1:N1+N2)]
+        q1 = q[q₁_idxs]
+        q2 = q[q₂_idxs]
         _tf1 = joint_transform(jd1, zero(Transform{T}), t, q1)
         _tf2 = joint_transform(jd2, _tf1, t, q2)
         SVector(_tf2)
@@ -125,10 +128,10 @@ function _test_double_joint(jd1::JD1, jd2::JD2, q₁, q₂, q̇₁, q̇₂) wher
     Jv2, Jw2 = jacobian_column(jd2, tf1, tf2, t, q₂)
     # Jo3, Jr3 = VMRobotControl.autodiff_jacobian_column(jd2, tf1, tf2, q[joint2.idx])
 
-    Jv_auto = origin(J_auto)[:, 2]
-    Jw_auto = quatmul_geodual_bivector_matrix(rotor(tf_auto)) * rotor(J_auto)[:, 2]
-    @test  Jv_auto ≈ Jv2[:] atol=1e-8 rtol=1e-8
-    @test  Jw_auto ≈ Jw2[:] atol=1e-8 rtol=1e-8
+    Jv_auto = origin(J_auto)[:, q₂_idxs]
+    Jw_auto = quatmul_geodual_bivector_matrix(rotor(tf_auto)) * rotor(J_auto)[:, q₂_idxs]
+    @test  Jv_auto ≈ Jv2 atol=1e-8 rtol=1e-8
+    @test  Jw_auto ≈ Jw2 atol=1e-8 rtol=1e-8
 end
 
 function test_single_joint_mechanism(::Type{JD}) where {T, JD<:AbstractJointData{T}}
