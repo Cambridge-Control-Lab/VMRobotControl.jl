@@ -38,8 +38,8 @@ end
 
 function inertance_matrix!(M::Matrix, cache::MechanismCacheBundle, pm::PointMass)
     J = _jacobian(cache, pm.coord)
-    # M = M + J' * pm.mass * J
-    mul!(M, J', J, pm.mass, true) 
+    Mw = get_inertance_matrix_workspace(cache)
+    custom_transpose_mul_add!(M, J, pm.mass)
     M
 end
 

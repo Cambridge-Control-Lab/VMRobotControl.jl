@@ -48,24 +48,10 @@ function _stored_energy(cache::MechanismCacheBundle, inr::LinearInerter)
     0.5 * v' * m * v
 end
 
-# function _inertance_matrix(cache::MechanismCacheBundle, inr::LinearInerter)
-#     m, coord = inr.inertance, inr.coord
-#     J = _jacobian(cache, coord)
-#     J' * m * J
-# end
-
 function inertance_matrix!(M::Matrix, cache::MechanismCacheBundle, inr::LinearInerter)
     m, coord = inr.inertance, inr.coord
     J = _jacobian(cache, coord)
-    # # TODO try turbo with enzyme
-    # @turbo for i = axes(M, 1), j = axes(M, 2)
-    #     M_ij = zero(eltype(M))
-    #     for k = axes(J, 1)
-    #         M_ij += J[k, i] * m * J[k, j]
-    #     end
-    #     M[i, j] += M_ij
-    # end
-    mul!(M, J', J, m, true) # M = M + J' * m * J # TODO check this with SMatrix for m...
+    custom_transpose_mul_add!(M, J, m)
     nothing
 end
 

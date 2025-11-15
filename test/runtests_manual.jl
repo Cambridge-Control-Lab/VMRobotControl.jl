@@ -33,6 +33,6 @@ results = @testset "All tests" begin
     results = @testset "Energy tests" test_on_mechanisms(test_energy, systems_with_inertances);
     results = @testset "RSON tests" test_on_mechanisms(test_rson, systems);
     # TODO ForwardDiff compat tests
-    TEST_ENZYME && (@testset "Enzyme compat tests" test_on_mechanisms(test_enzyme_compat, compiled_systems));
+    results = @testset "Enzyme compat tests" test_on_mechanisms(test_enzyme_compat, compiled_mechanisms);
 end;
 nothing

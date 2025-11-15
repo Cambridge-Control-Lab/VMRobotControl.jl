@@ -206,6 +206,7 @@ using InteractiveUtils: @code_warntype
 
 include("hessians.jl")
 include("splines.jl")
+include("matmul_utils.jl")
 
 ####################
 # Usings

@@ -1,3 +1,5 @@
+using Enzyme
+
 function enzyme_kinematics_test(m, t, q)
     cache = new_kinematics_cache(m)
     kinematics!(cache, t, q)
@@ -94,10 +96,10 @@ function __enzyme_test_mechanism(m)
     @test_nowarn enzyme_velocity_kinematics_test(m, t, q, q̇)
     @test_nowarn enzyme_acceleration_kinematics_test(m, t, q, q̇, q̈)
     @test_nowarn enzyme_jacobians_test(m, t, q)
-    # @test_nowarn enzyme_precomp_test(m, t, q, q̇, gravity)
-    # @test_nowarn enzyme_generalized_force_test(m, t, q, q̇, gravity)
-    # @test_nowarn enzyme_inertance_matrix_test(m, t, q) # This is broken right now...
-    # @test_nowarn enzyme_dynamics_test(m, t, q, q̇, gravity, u)
+    @test_nowarn enzyme_precomp_test(m, t, q, q̇, gravity)
+    @test_nowarn enzyme_generalized_force_test(m, t, q, q̇, gravity)
+    @test_nowarn enzyme_inertance_matrix_test(m, t, q)
+    @test_nowarn enzyme_dynamics_test(m, t, q, q̇, gravity, u)
 end
 
 function test_enzyme_compat(immut_mechanism)
