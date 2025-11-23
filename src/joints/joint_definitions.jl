@@ -14,6 +14,7 @@ requires the joint, the parent frame, and the child frame, creating a
 
 # See also 
 Joint data types: [`Rigid`](@ref), [`Revolute`](@ref), [`Prismatic`](@ref), [`Rail`](@ref)
+['Helical'](@ref)
 
 # Developer Notes
 Each joint type must implement the following methods:
@@ -38,6 +39,8 @@ jointtype(j::AbstractJointData) = typeof(j) # Pretty display fallback
 
 A rigid joint, defined simply by a transformation from the child frame to the 
 parent frame.
+
+See also [`JointData`](@ref)
 """
 struct Rigid{T} <: AbstractJointData{T}
     transform::Transform{T}
@@ -57,6 +60,8 @@ RefValue, which you can set/getcan like: `joint.transform[]`.
 
 Be careful when changing the transform---if you are doing many simulations you
 may need to deepcopy to avoid aliasing.
+
+See also [`JointData`](@ref)
 """
 struct ReferenceJoint{T} <: AbstractJointData{T}
     transform::Base.RefValue{Transform{T}}
@@ -69,6 +74,8 @@ ReferenceJoint(tf::Transform{T}) where T = ReferenceJoint{T}(Ref(tf))
 A TimeFuncJoint represents a joint which has a transform which is a function
 of time: `f_tf(t)`. The derivatives `f_twist` and `f_vpa` must be provided, and
 checked, by the user.
+
+See also [`JointData`](@ref)
 """
 struct TimeFuncJoint{T, F1, F2, F3} <: AbstractJointData{T}
     f_tf::F1
@@ -90,14 +97,14 @@ child frame to the parent frame is `tf * Transform(AxisAngle(axis, q))`.
 
 `axis` must be normalized: `norm(axis)≈1.0`.
 
-See also [`Prismatic`](@ref), [`Rail`](@ref)
+See also [`JointData`](@ref)
 """
 function Revolute end
 
 struct RevoluteData{T} <: AbstractJointData{T}
     axis::SVector{3, T}
     transform::Transform{T}
-    function RevoluteData(a::SVector{3, T}, tf::Transform{T}) where T
+    function RevoluteData(a::SVector{3, T}, tf::Transform{T}) where T # TODO Breaking - add {T} here
         @assert norm(a) ≈ one(T) "Rotary joint axis '$a' must be normalized. `norm(a)=`$norm(a)."
         new{T}(a, tf)
     end
@@ -120,7 +127,7 @@ Represents a prismatic/sliding joint between two frames. The transform from the
 child frame to the parent frame is `tf * Transform(q*axis).` The axis does not
 have to be normalized.
 
-See also [`Revolute`](@ref), [`Rail`](@ref), 
+See also [`JointData`](@ref)
 """
 function Prismatic end
 
@@ -134,6 +141,45 @@ Prismatic(axis::SVector{3, T}) where T = PrismaticData(axis, zero(Transform{T}))
 
 function Random.rand(rng::AbstractRNG, ::Random.SamplerType{PrismaticData{T}}) where T
     PrismaticData(rand(rng, SVector{3, T}), rand(rng, Transform{T}))
+end
+
+"""
+    Helical(axis::SVector{3})
+    Helical(axis::SVector{3}, tf::Transform)
+
+Represents a helical/screw joint between two frames. The transform from the
+child frame to the parent frame is `tf * Transform(q*axis).` The axis must
+be normalized.
+
+The screw motion is is defined by a translation `q*lead*axis`, and a
+rotation by q around `axis`, as the lead of the screw is the distance 
+travelled per full rotation.
+
+To change from a counter-clockwise to a clockwise helix, flip the direction
+of the axis, and use a negative lead.
+
+As a result the "pitch" of the screw is |axis|, the lengthwise
+distance travelled for one rotation.
+
+See also [`JointData`](@ref)
+"""
+function Helical end
+
+struct HelicalData{T} <: AbstractJointData{T}
+    axis::SVector{3, T}
+    lead::T
+    transform::Transform{T}
+    function HelicalData{T}(axis::SVector{3, T}, lead::T, transform::Transform{T}) where T
+        @assert norm(axis) ≈ one(T) "Helical joint axis '$a' must be normalized. `norm(a)=`$norm(a)."
+        new{T}(axis, lead, transform)
+    end
+end
+
+Helical(axis::SVector{3, T}, lead::T, tf::Transform{T}) where T = HelicalData{T}(axis, lead, tf)
+Helical(axis::SVector{3, T}, lead::T) where T = HelicalData{T}(axis, zero(Transform{T}))
+
+function Random.rand(rng::AbstractRNG, ::Random.SamplerType{HelicalData{T}}) where T
+    Helical(normalize(rand(rng, SVector{3, T})), rand(rng, T), rand(rng, Transform{T}))
 end
 
 """
@@ -174,8 +220,6 @@ end
     Spherical()
     Spherical(tf::Transform)
 
-BROKEN. DOES NOT WORK YET.
-
 Represents a spherical joint between two frames. 
 
 See also [`Revolute`](@ref)
@@ -209,6 +253,9 @@ velocity_size(::Type{<:TimeFuncJoint}) = 0
 config_size(::Type{<:RevoluteData}) = 1
 velocity_size(::Type{<:RevoluteData}) = 1
 
+config_size(::Type{<:HelicalData}) = 1
+velocity_size(::Type{<:HelicalData}) = 1
+
 config_size(::Type{<:PrismaticData}) = 1
 velocity_size(::Type{<:PrismaticData}) = 1
 
@@ -223,6 +270,7 @@ jointtype(::ReferenceJoint) = "Reference"
 jointtype(::TimeFuncJoint) = "TimeFunc"
 jointtype(::RevoluteData) = "Revolute"
 jointtype(::PrismaticData) = "Prismatic"
+jointtype(::HelicalData) = "Helical"
 jointtype(::RailData) = "Rail"
 jointtype(::SphericalData) = "Spherical"
 
@@ -262,19 +310,13 @@ end
 @inline _joint_relative_transform(joint::TimeFuncJoint,     t, qⱼ::SVector{0}) = joint.f_tf(t)
 @inline _joint_relative_transform(joint::RevoluteData,      t, qⱼ::SVector{1}) = joint.transform * Transform(AxisAngle(joint.axis, qⱼ[1], Val(false)))
 @inline _joint_relative_transform(joint::PrismaticData,     t, qⱼ::SVector{1}) = joint.transform * Transform(qⱼ[1] .* joint.axis)
+@inline _joint_relative_transform(joint::HelicalData,       t, qⱼ::SVector{1}) = joint.transform * (AxisAngle(joint.axis, qⱼ[1]) * Transform((qⱼ[1] * joint.lead)  .* joint.axis))
 @inline _joint_relative_transform(joint::RailData,          t, qⱼ::SVector{1}) = joint.transform * Transform(spline_position(qⱼ[1] / joint.scaling, joint.spline))
-@inline function spherical_joint_rotor(q::SVector{3})
-    # q = θB
-    # θ = norm(q)
-    # half_θ = θ/2
-    a = half_θ = q' * q
-    s, c = sincos(a)
-    k = s ≈ zero(s) ? oneunit(s) : s/a # Handle limit when half_θ -> 0
-    Rotor(c, k * q)
-end
 @inline function _joint_relative_transform(joint::SphericalData, t, q::SVector{3})
-    tf = Transform(spherical_joint_rotor(q))
-    return joint.transform * tf
+    Q = norm(q)
+    sinc = Q ≈ zero(Q) ? one(Q) : sin(Q) / Q
+    rotor = Rotor(cos(Q), sinc * q)
+    return joint.transform * rotor
 end
 
 ######################
@@ -347,6 +389,13 @@ function _joint_relative_twist(joint::PrismaticData, t, q, q̇)
     Twist(δv, zero(δv))
 end
 @inline
+function _joint_relative_twist(joint::HelicalData, t, q, q̇)
+    axis = rotor(joint.transform) * joint.axis
+    δv = axis * joint.lead * q̇[1] # Translational
+    δω = axis * q̇[1] # Rotational
+    Twist(δv, δω)
+end
+@inline
 function _joint_relative_twist(joint::RailData, t, q, q̇)
     tangent = rotor(joint.transform) * spline_derivative(q[1]/joint.scaling, joint.spline)/joint.scaling
     δv = tangent * q̇[1]
@@ -355,34 +404,16 @@ end
 
 @inline
 function _joint_relative_twist(joint::SphericalData, t, q::SVector{3}, q̇::SVector{3})
-    # rs = spherical_joint_rotor(q)
-    # rj = rotor(joint.transform)
+    Q = norm(q)
+    sinc = Q ≈ zero(Q) ? one(Q) : sin(Q) / Q
+    rot = Rotor(cos(Q), sinc * q)
 
-    a = half_θ = q' * q
-    ȧ = 2 * q' * q̇
+    Q̇ = (q' * q̇) / Q
+    sinċ = Q ≈ zero(Q) ? zero(Q) : Q̇ * (cos(Q) * Q - sin(Q)) / (Q^2)
+    drot_dt = Rotor(-sin(Q) * Q̇, q * sinċ + sinc * q̇, Val{false}())
 
-    s, c = sincos(a)
-    ṡ, ċ = ȧ * c, -ȧ * s
-
-    k = s ≈ zero(s) ? oneunit(s) : s/a # Handle limit when half_θ -> 0
-    k̇ = s ≈ zero(s) ? zero(s) : ṡ/a - ȧ*s/(a^2)  # ṡa⁻¹ - ȧ s a⁻²
-
-    B = k * q
-    Ḃ = k̇ * q + k * q̇
-
-    r = Rotor(c, B) 
-    @assert r == spherical_joint_rotor(q)
-    ṙ = Rotor(ċ, Ḃ, Val(false))
-    # @show rs * (2 * q̇)
-    # @show rj * (2 * q̇)
-    # @show rs * rs * (2 * q̇)
-    # @show rj * rs * (2 * q̇)
-
-    # ṙ = 1/2 * ω * r
-    # ω = 2 ṙ * r⁻¹
-    δω = 2 * bivector(Transforms.rotate(r, ṙ, Val{false}()))
-    # δω = rs * (2 * q̇)
-
+    δω = rotor(joint.transform) * (angular_velocity_prematrix(rot) * rotor_to_svector(drot_dt))
+    # δω = rotor(joint.transform) * angular_velocity(rot, rotor_to_svector(drot_dt))
     Twist(zero(δω), δω)
 end
 
@@ -444,13 +475,32 @@ function joint_relative_vpa(joint, t, q, q̇,)
 end
 @inline _joint_relative_vpa(j::Union{Rigid, ReferenceJoint}, t, q, q̇) = zero(SpatialAcceleration{eltype(q)})
 @inline _joint_relative_vpa(j::TimeFuncJoint, q, q̇, t) = j.f_vpa(t)
-@inline _joint_relative_vpa(j::Union{RevoluteData, PrismaticData}, t, q, q̇) = zero(SpatialAcceleration{eltype(q)})
+@inline _joint_relative_vpa(j::Union{RevoluteData, PrismaticData, HelicalData}, t, q, q̇) = zero(SpatialAcceleration{eltype(q)})
 @inline function _joint_relative_vpa(joint::RailData, t, q, q̇)
     dtangent = rotor(joint.transform) * spline_second_derivative(q[1]/joint.scaling, joint.spline) / (joint.scaling^2) 
     δv̇ = dtangent*q̇[1]^2
     SpatialAcceleration(δv̇, zero(δv̇))
 end
-@inline _joint_relative_vpa(::SphericalData, t, q, q̇) = zero(SpatialAcceleration{eltype(q̇)})
+@inline function _joint_relative_vpa(j::SphericalData, t, q, q̇)
+    Q = norm(q)
+    Q̇ = (q' * q̇) / Q
+    Q̈ = (q̇' * q̇) / Q - (q' * q̇ ) * Q̇ / (Q^2)
+
+    sinc = Q ≈ zero(Q) ? one(Q) : sin(Q) / Q
+    sinċ = Q ≈ zero(Q) ? zero(Q) : Q̇ * (cos(Q) * Q - sin(Q)) / (Q^2)
+    sinc̈ = Q ≈ zero(Q) ? zero(Q) : Q̈ * (cos(Q) * Q - sin(Q)) / (Q^2) + Q̇^2 * (-Q^2 * sin(Q) - 2*Q*cos(Q) + 2*sin(Q))/(Q^3) 
+
+    rot = Rotor(cos(Q), sinc * q)
+    drot_dt = Rotor(-sin(Q) * Q̇, q * sinċ + sinc * q̇, Val{false}())
+    ddrot_dt = Rotor(
+        -sin(Q)*Q̈ - cos(Q)*Q̇^2, q * sinc̈ + 2*q̇*sinċ,
+        Val{false}()
+    )
+    δω = rotor(j.transform) * (angular_velocity_prematrix(rot) * rotor_to_svector(drot_dt))
+    δω̇ = rotation_matrix(rotor(j.transform)) * angular_velocity_prematrix(rot) * rotor_to_svector(ddrot_dt) + angular_velocity_prematrix(drot_dt) * rotor_to_svector(drot_dt)
+
+    SpatialAcceleration(zero(δω̇), δω̇)
+end
 
 
 ######################
@@ -485,6 +535,12 @@ end
     axis = rotor(j.transform) * j.axis
     v̇ = axis * q̈[1]
     SpatialAcceleration(v̇, zero(v̇))
+end
+@inline function _joint_relative_acceleration(j::HelicalData, t, q, q̈)
+    axis = rotor(j.transform) * j.axis
+    v̇ = axis * j.lead * q̈[1]
+    ω̇ = axis * q̈[1]
+    SpatialAcceleration(v̇, ω̇)
 end
 @inline function _joint_relative_acceleration(j::RailData, t, q, q̈)
     tangent = rotor(j.transform) * spline_derivative(q[1]/j.scaling, j.spline)/j.scaling
@@ -554,6 +610,13 @@ function _jacobian_columns(joint::PrismaticData, tfₚ::Transform, final_tf::Tra
     Jo_col, zero(Jo_col)
 end
 
+function _jacobian_columns(joint::HelicalData, tfₚ::Transform, final_tf::Transform, t, q)
+    axis = rotor(tfₚ) * rotor(joint.transform) * joint.axis
+    Jo_col = axis * joint.lead
+    Jw_col = axis
+    Jo_col, Jw_col
+end
+
 function _jacobian_columns(joint::RailData, tfₚ::Transform, final_tf::Transform, t, q::SVector{1})
     dspline = spline_derivative(q[1]/joint.scaling, joint.spline)/joint.scaling
     axis = rotor(tfₚ) * rotor(joint.transform) * dspline
@@ -562,9 +625,17 @@ function _jacobian_columns(joint::RailData, tfₚ::Transform, final_tf::Transfor
 end
 
 function _jacobian_columns(joint::SphericalData, tfₚ::Transform, final_tf::Transform, t, q::SVector{3})
-    # r = _joint_relative_transform(joint, t, q)
+    Q = norm(q)
+    sinc = Q ≈ zero(Q) ? one(Q) : sin(Q) / Q
+    rot = Rotor(cos(Q), sinc * q)
+
+    JQ = (q') / Q
+    Jsinc = Q ≈ zero(Q) ? zero(JQ) : JQ * (cos(Q) * Q - sin(Q)) / (Q^2)
+    Jscalar = -sin(Q)*JQ
+    Jbivector = q * Jsinc + sinc * SMatrix{3, 3}(1, 0, 0, 0, 1, 0, 0, 0, 1)
+
     R = rotation_matrix(rotor(tfₚ) * rotor(joint.transform))
-    Jw_cols = 2 * R
+    Jw_cols = R * angular_velocity_prematrix(rot) * vcat(Jscalar, Jbivector)
     Jo_cols = zero(Jw_cols)
     Jo_cols, Jw_cols
 end
@@ -595,9 +666,6 @@ function autodiff_jacobian_column(jointdata, tf_parent, tf_child, tf_final, t, q
         return Jo_col, Jw_col
     else
         T, N = eltype(q_joint), length(q_joint)
-        @show diffresult
-        @show jacobian(diffresult)
-        @show typeof(jacobian(diffresult))
         Jo_cols = SMatrix{3, N, T}(origin(jacobian(diffresult)))
         Jr_cols = SMatrix{4, N, T}(rotor(jacobian(diffresult)))
         Jw_cols = quatmul_geodual_bivector_matrix(rotor(tf_final)) * Jr_cols
@@ -632,6 +700,13 @@ function _project_forces_to_jointspace(j::PrismaticData, tf_p::Transform{T}, tf_
     # Rotate axis to world frame, then dot with force
     axis = rotor(tf_c) * j.axis
     u = -dot(axis, f_c)
+    return SVector(u)
+end
+
+function _project_forces_to_jointspace(j::HelicalData, tf_p::Transform{T}, tf_c::Transform{T}, f_p::S, f_c::S, τ_p::S, τ_c::S) where {T, S<: SVector{3, T}} 
+    # Combination of revolute/prismatic 
+    axis = rotor(tf_p) * rotor(j.transform) * j.axis
+    u = -dot(axis, τ_c) - j.lead * dot(axis, f_c)
     return SVector(u)
 end
 

@@ -41,8 +41,18 @@ function transform(tf1::Transform{T1}, tf2::Transform{T2}) where {T1, T2}
     Transform(o, r)
 end
 
-@inline Base.:*(T::Transform, p::SVector{3}) = transform(T, p)
-@inline Base.:*(tf1::Transform{T1}, tf2::Transform{T2}) where {T1, T2} = transform(tf1, tf2)
+function transform(tf::Transform{T1}, R::Rotor{T2}) where {T1, T2}
+    T_out = promote_type(T1, T2)
+    Transform{T_out}(tf.origin, tf.rotor*R)
+end
+
+function transform(R::Rotor{T1}, tf::Transform{T2}) where {T1, T2}
+    Transform(R*tf.origin, R*tf.rotor)
+end
+
+@inline Base.:*(T::Transform, other) = transform(T, other)
+@inline Base.:*(other, T::Transform) = transform(other, T)
+@inline Base.:*(T1::Transform, T2::Transform) = transform(T1, T2)
 
 function Base.inv(tf::Transform{T}) where T
     r⁻¹, o = inv(rotor(tf)), origin(tf)

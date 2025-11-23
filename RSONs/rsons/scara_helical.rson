@@ -1,0 +1,205 @@
+{
+    "rson_version": "0.1.1",
+    "type": "mechanism",
+    "name": "scara_helical",
+    "frames": [
+        "root_frame",
+        "L1_frame",
+        "L2_frame",
+        "EE_frame"
+    ],
+    "joints": {
+        "J1": {
+            "type": "revolute",
+            "parent": "root_frame",
+            "child": "L1_frame",
+            "axis": [
+                0,
+                0,
+                1
+            ]
+        },
+        "J2": {
+            "type": "revolute",
+            "parent": "L1_frame",
+            "child": "L2_frame",
+            "axis": [
+                0,
+                0,
+                1
+            ],
+            "origin": [
+                0.4,
+                0,
+                0.0
+            ]
+        },
+        "ee_joint": {
+            "type": "helical",
+            "parent": "L2_frame",
+            "child": "EE_frame",
+            "axis": [
+                0,
+                0,
+                -1
+            ],
+            "lead": 0.01,
+            "origin": [
+                0.4,
+                0,
+                0
+            ]
+        }
+    },
+    "coordinates": {
+        "i1_com": {
+            "type": "frame_point",
+            "frame": "L1_frame",
+            "point": [
+                0.2,
+                0,
+                0
+            ]
+        },
+        "i2_com": {
+            "type": "frame_point",
+            "frame": "L2_frame",
+            "point": [
+                0.2,
+                0,
+                0
+            ]
+        },
+        "J1": {
+            "type": "joint_subspace",
+            "joint": "J1"
+        },
+        "J2": {
+            "type": "joint_subspace",
+            "joint": "J2"
+        }
+    },
+    "components": {
+        "i1": {
+            "type": "point_mass",
+            "coord": "i1_com",
+            "mass": 2.0
+        },
+        "i2": {
+            "type": "point_mass",
+            "coord": "i2_com",
+            "mass": 1.2
+        },
+        "i3": {
+            "type": "inertial",
+            "frame": "EE_frame",
+            "mass": 0.3,
+            "inertia": {
+                "xx": 0.01,
+                "yy": 0.01,
+                "zz": 0.01
+            }
+        },
+        "d1": {
+            "type": "linear_damper",
+            "coord": "J1",
+            "damping_coefficient": 0.04
+        },
+        "d2": {
+            "type": "linear_damper",
+            "coord": "J2",
+            "damping_coefficient": 0.02
+        }
+    },
+    "materials": {
+        "white": [
+            0.9,
+            0.9,
+            0.9,
+            1.0
+        ],
+        "grey": [
+            0.8,
+            0.8,
+            0.8,
+            1.0
+        ]
+    },
+    "visuals": {
+        "base_box": {
+            "type": "box",
+            "frame": {
+                "parent": "root_frame",
+                "origin": [
+                    0,
+                    0,
+                    -0.1
+                ]
+            },
+            "material": "grey",
+            "size": [
+                0.2,
+                0.2,
+                0.2
+            ]
+        },
+        "l1_cyclinder": {
+            "type": "cylinder",
+            "frame": "L1_frame",
+            "material": "white",
+            "length": 0.2,
+            "radius": 0.075
+        },
+        "l2_cylinder": {
+            "type": "cylinder",
+            "frame": "L2_frame",
+            "material": "white",
+            "length": 0.2,
+            "radius": 0.075
+        },
+        "l1_box": {
+            "type": "box",
+            "frame": {
+                "parent": "L1_frame",
+                "origin": [
+                    0.2,
+                    0,
+                    0
+                ]
+            },
+            "material": "white",
+            "size": [
+                0.4,
+                0.1,
+                0.1
+            ]
+        },
+        "l2_box": {
+            "type": "box",
+            "frame": {
+                "parent": "L2_frame",
+                "origin": [
+                    0.2,
+                    0,
+                    0
+                ]
+            },
+            "material": "white",
+            "size": [
+                0.4,
+                0.1,
+                0.1
+            ]
+        },
+        "ee_box": {
+            "type": "box",
+            "frame": "EE_frame",
+            "material": "white",
+            "size": [
+                0.12,
+                0.12,
+                0.12
+            ]
+        }
+    }
+}

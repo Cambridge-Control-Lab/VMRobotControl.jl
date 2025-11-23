@@ -2,16 +2,16 @@
 TEST_ENZYME = false
 # TEST_ENZYME = true
 
-
 using DiffResults
-using FileIO
 using ForwardDiff
+using FileIO
 using LinearAlgebra
 using ProgressMeter
 using Random
-
+using StaticArrays
+using Test
+using UUIDs
 using VMRobotControl
-
 using VMRobotControl: joint_transform, joint_twist, joint_vpa, jacobian_column, AbstractJointData
 using VMRobotControl: Twist, SpatialAcceleration
 using VMRobotControl.Hessians: my_hessian, hessian_vector_product
@@ -19,11 +19,6 @@ using VMRobotControl.Transforms: angular_velocity, AxisAngle, AxisAngleDerivativ
 using VMRobotControl: get_inertance_components
 using VMRobotControl: Storage, Inertance, GenericComponent
 import VMRobotControl: jacobian # Explicitly import to avoid name clash with Enzyme.jacobian
-
-using StaticArrays
-# using StatsBase: sample
-using Test
-using UUIDs
 
 try
     FileIO.add_format(format"DAE", (), ".dae", [:DigitalAssetExchangeFormatIO => UUID("43182933-f65b-495a-9e05-4d939cea427d")])
@@ -46,14 +41,6 @@ if TEST_ENZYME
 end
 
 ################################################################################
-
-function test_on_mechanisms(test, mechanisms::Vector)
-    @showprogress desc=string(test) for m in mechanisms
-        @testset "Robot: '$(name(m))'" begin
-            test(m)
-        end
-    end
-end
 
 module_path = joinpath(splitpath(dirname(pathof(VMRobotControl)))[1:end-1])
 # Walk dir to find all rsons

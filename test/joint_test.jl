@@ -45,7 +45,6 @@ function _test_single_joint(jointdata::AbstractJointData{T}, parent_tf, q, q̇) 
     twist_kinematic = joint_twist(jointdata, parent_tf, tf, parent_twist, t, q, q̇)
     @test isnan(twist_kinematic) == false
     @test twist_AD ≈ twist_kinematic
-    # isa(result, Test.Fail) && begin println("FAILURE....."); @show(jointdata, q, q̇) end
     
     vpa_kinematic = joint_vpa(jointdata, parent_tf, tf, parent_twist, twist_AD, parent_vpa, t, q, q̇, )
     @test isnan(vpa_kinematic) == false
@@ -76,41 +75,49 @@ function _test_single_joint(jointdata::AbstractJointData{T}, parent_tf, q, q̇) 
     end
 end
 
-
 function test_double_joint(::Type{JD1}, ::Type{JD2}) where {T, JD1 <: AbstractJointData{T}, JD2 <: AbstractJointData{T}}
     rng = MersenneTwister(1234)
-    scalar_type = T
-    jointdata1 = rand(rng, JD1)
-    jointdata2 = rand(rng, JD2)
-    
-    q = rand(rng, SVector{2, scalar_type})
-    q̇ = rand(rng, SVector{2, scalar_type})
-    t = 0.0 # Time is irrelevant to these tests as no `TimeFuncJoint`s
+    jd1 = rand(rng, JD1)
+    jd2 = rand(rng, JD2)
+    q₁= rand(rng, SVector{config_size(jd1), T})
+    q₂= rand(rng, SVector{config_size(jd2), T})
+    q̇₁ = rand(rng, SVector{velocity_size(jd1), T})    
+    q̇₂ = rand(rng, SVector{velocity_size(jd2), T})    
+    _test_double_joint(jd1, jd2, q₁, q₂, q̇₁, q̇₂)
+end
 
-    q1, q2 = SVector(q[1]), SVector(q[2])
-    q̇1, q̇2 = SVector(q̇[1]), SVector(q̇[2])
+function _test_double_joint(jd1::JD1, jd2::JD2, q₁, q₂, q̇₁, q̇₂) where {T, JD1 <: AbstractJointData{T}, JD2 <: AbstractJointData{T}}
+    t = 0.0 # Time is irrelevant to these tests as no `TimeFuncJoint`s
 
     tf0 = zero(Transform{T})
     twist0 = zero(Twist{T})
     vpa0 = zero(SpatialAcceleration{T})
 
-    tf1 = joint_transform(jointdata1, tf0, t, q1)
-    twist1 = joint_twist(jointdata1, tf0, tf1, twist0, t, q1, q̇1)
-    vpa1 = joint_vpa(jointdata1, tf0, tf1, twist0, twist1, vpa0, t, q1, q̇1)
+    tf1 = joint_transform(jd1, tf0, t, q₁)
+    twist1 = joint_twist(jd1, tf0, tf1, twist0, t, q₁, q̇₁)
+    vpa1 = joint_vpa(jd1, tf0, tf1, twist0, twist1, vpa0, t, q₁, q̇₁)
     
-    tf2 = joint_transform(jointdata2, tf1, t, q2)
-    twist2 = joint_twist(jointdata2, tf1, tf2, twist1, t, q2, q̇2)
-    vpa2 = joint_vpa(jointdata2, tf1, tf2, twist1, twist2, vpa1, t, q2, q̇2)
-    
-    dr = my_hessian(q) do q
-        _tf1 = joint_transform(jointdata1, zero(Transform{T}), t, SVector(q[1]))
-        _tf2 = joint_transform(jointdata2, _tf1, t, SVector(q[2]))
+    tf2 = joint_transform(jd2, tf1, t, q₂)
+    twist2 = joint_twist(jd2, tf1, tf2, twist1, t, q₂, q̇₂)
+    vpa2 = joint_vpa(jd2, tf1, tf2, twist1, twist2, vpa1, t, q₂, q̇₂)
+
+    # Compile time constant indices
+    N1 = length(q₁)
+    N2 = length(q₂)
+    q₁_idxs = SVector{N1, Int}(1:N1); 
+    q₂_idxs = SVector{N2}(N1+1:N1+N2)
+    dr = my_hessian(vcat(q₁, q₂)) do q
+        q1 = q[q₁_idxs]
+        q2 = q[q₂_idxs]
+        _tf1 = joint_transform(jd1, zero(Transform{T}), t, q1)
+        _tf2 = joint_transform(jd2, _tf1, t, q2)
         SVector(_tf2)
     end
 
     tf_auto = DiffResults.value(dr)[1]
     J_auto = DiffResults.derivative(dr)[1]
     H_auto = DiffResults.hessian(dr)[1]
+    q̇ = vcat(q̇₁, q̇₂)
     twist_auto = Twist(tf_auto, J_auto, q̇)
     vpa_auto = SpatialAcceleration(tf_auto, J_auto, H_auto, q̇)
 
@@ -118,13 +125,13 @@ function test_double_joint(::Type{JD1}, ::Type{JD2}) where {T, JD1 <: AbstractJo
     @test twist_auto ≈ twist2 atol=1e-8 rtol=1e-8
     @test vpa_auto ≈ vpa2 atol=1e-8 rtol=1e-8
 
-    Jv2, Jw2 = jacobian_column(jointdata2, tf1, tf2, t, q2)
-    # Jo3, Jr3 = VMRobotControl.autodiff_jacobian_column(jointdata2, tf1, tf2, q[joint2.idx])
+    Jv2, Jw2 = jacobian_column(jd2, tf1, tf2, t, q₂)
+    # Jo3, Jr3 = VMRobotControl.autodiff_jacobian_column(jd2, tf1, tf2, q[joint2.idx])
 
-    Jv_auto = origin(J_auto)[:, 2]
-    Jw_auto = quatmul_geodual_bivector_matrix(rotor(tf_auto)) * rotor(J_auto)[:, 2]
-    @test  Jv_auto ≈ Jv2[:] atol=1e-8 rtol=1e-8
-    @test  Jw_auto ≈ Jw2[:] atol=1e-8 rtol=1e-8
+    Jv_auto = origin(J_auto)[:, q₂_idxs]
+    Jw_auto = quatmul_geodual_bivector_matrix(rotor(tf_auto)) * rotor(J_auto)[:, q₂_idxs]
+    @test  Jv_auto ≈ Jv2 atol=1e-8 rtol=1e-8
+    @test  Jw_auto ≈ Jw2 atol=1e-8 rtol=1e-8
 end
 
 function test_single_joint_mechanism(::Type{JD}) where {T, JD<:AbstractJointData{T}}
@@ -285,7 +292,9 @@ end
 mobile_jointtypes = [
     RevoluteData{Float64},
     PrismaticData{Float64},
+    HelicalData{Float64},
     RailData{Float64, VMRobotControl.CubicSpline{3, Float64}},
+    SphericalData{Float64}
 ]
 all_jointtypes = [
     RevoluteData{Float64},
