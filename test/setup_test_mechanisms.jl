@@ -18,6 +18,7 @@ using VMRobotControl.Hessians: my_hessian, hessian_vector_product
 using VMRobotControl.Transforms: angular_velocity, AxisAngle, AxisAngleDerivative, quatmul_matrix, quatmul_geodual_bivector_matrix
 using VMRobotControl: get_inertance_components
 using VMRobotControl: Storage, Inertance, GenericComponent
+import VMRobotControl: jacobian # Explicitly import to avoid name clash with Enzyme.jacobian
 
 using StaticArrays
 # using StatsBase: sample

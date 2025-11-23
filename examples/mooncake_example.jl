@@ -1,8 +1,6 @@
 using DifferentialEquations
-using ForwardDiff
 using Mooncake
 using LinearAlgebra
-using QuadGK
 using VMRobotControl
 using SciMLSensitivity
 using StaticArrays
@@ -13,10 +11,12 @@ m = compile(mechanism)
 
 dcache = new_dynamics_cache(m)
 tspan = (0.0, 1.0)
-q0 = [1.,]
+q0 = [0.,]
 q̇0 = [1.,]
 gravity = VMRobotControl.DEFAULT_GRAVITY
+p = [1.0,]
 
+f_setup(cache) = ()
 f_control = (cache, t, args, extra) -> begin
     q̇ = get_q̇(cache)
     u = get_u(cache)
@@ -25,9 +25,8 @@ f_control = (cache, t, args, extra) -> begin
     nothing
 end
 
-f = get_ode_dynamics(dcache, gravity; f_control)
+f = get_ode_dynamics(dcache, gravity; f_setup, f_control)
 x0 = vcat(q0, q̇0)
-p = [1.0,]
 prob = ODEProblem(f, x0, tspan, p)
 sol = solve(prob, Tsit5())
 
