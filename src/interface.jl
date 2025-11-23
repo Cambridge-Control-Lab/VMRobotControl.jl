@@ -897,13 +897,16 @@ function get_ode_dynamics(
     g_cache[] = gravity
     args = f_setup(bundle)
     function ode_dynamics!(dx, x, p, t)
+        # Copy args into cache
+        t_cache[] = t
         copyto!(q_cache, 1, x, iq.start, length(iq))
         copyto!(q̇_cache, 1, x, iq̇.start, length(iq̇))
-        t_cache[] = t
+        # Do dynamics
+        f_control(bundle, t, args, (dx, x, p))
         q̈_cache = _dynamics!(bundle) # Mutates
+        # Copy results into dx
         copyto!(dx, iq.start, q̇_cache, 1, length(iq))
         copyto!(dx, iq̇.start, q̈_cache, 1, length(iq̇))
-        f_control(bundle, t, args, (dx, x, p))
         nothing
     end
 end
@@ -928,19 +931,20 @@ function get_ode_dynamics(
     g[] = gravity
     args = f_setup(bundle)
     function ode_dynamics!(dx, x, p, t)
+        # Copy args into cache
         t_cache[] = t
         copyto!(qʳ, 1, x, qʳ_idxs.start, length(qʳ_idxs))
         copyto!(qᵛ, 1, x, qᵛ_idxs.start, length(qᵛ_idxs))
         copyto!(q̇ʳ, 1, x, q̇ʳ_idxs.start, length(q̇ʳ_idxs))
         copyto!(q̇ᵛ, 1, x, q̇ᵛ_idxs.start, length(q̇ᵛ_idxs))      
-        
+        # Do dynamics
+        f_control(bundle, t, args, (dx, x, p))
         q̈ʳ, q̈ᵛ = _dynamics!(bundle)
-
+        # Copy results into dx
         copyto!(dx, qʳ_idxs.start, q̇ʳ, 1, length(qʳ_idxs))
         copyto!(dx, qᵛ_idxs.start, q̇ᵛ, 1, length(qᵛ_idxs))
         copyto!(dx, q̇ʳ_idxs.start, q̈ʳ, 1, length(q̇ʳ_idxs))
         copyto!(dx, q̇ᵛ_idxs.start, q̈ᵛ, 1, length(q̇ᵛ_idxs))
-        f_control(bundle, t, args, (dx, x, p))
         nothing
     end
 end

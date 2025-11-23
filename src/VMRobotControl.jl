@@ -193,6 +193,7 @@ export # Accessors for caches
     get_q̇,
     get_q̈,
     get_u,
+    get_gravity,
     get_torques,
     get_inertance_matrix,
     get_generalized_force
