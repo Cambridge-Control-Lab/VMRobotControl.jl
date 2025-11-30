@@ -21,8 +21,6 @@ end
 
 remaker_of(c::CompiledCoord) = parameterless_type(c)
 
-Base.show(io::IO, ::Type{<:CompiledCoord{C}}) where C = print(io, "CompiledCoord{$C}")
-
 """
     CompiledCoordID{C}
 
@@ -36,8 +34,6 @@ struct CompiledCoordID{C <: CoordinateData} <: AbstractCompiledMechanismIndex
     end
 end
 
-Base.show(io::IO, ::Type{CompiledCoordID{C}}) where C = print(io, "CompiledCoordID{$C}")
-
 # Virtual Mechanism System Coord Index 
 struct VMSCoordID{C, S} <: AbstractCompiledVirtualMechanismSystemIndex
     idx::CompiledCoordID{C}
@@ -46,9 +42,6 @@ struct VMSCoordID{C, S} <: AbstractCompiledVirtualMechanismSystemIndex
     VMSCoordID{ON_SYSTEM}(idx::CompiledCoordID{C}) where C = new{C, ON_SYSTEM}(idx)
 end
 _vms_location(::VMSCoordID{T, S}) where {T, S} = Val{S}()
-
-Base.show(io::IO, ::Type{<:VMSCoordID{C, S}}) where {C, S} = print(io, "VMSCoordID{$C, $S}")
-
 
 const CoordID = Union{String, CompiledCoordID, VMSCoordID}
 

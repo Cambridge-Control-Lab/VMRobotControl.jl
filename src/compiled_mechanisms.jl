@@ -130,9 +130,6 @@ function Base.getindex(c::EltypeCache{F}, ::Type{ELTYPE}) where {F<:Function, EL
     return value::ReturnType
 end
 
-Base.show(io::IO, c::EltypeCache) = print(io, "EltypeCache{...} with keys $(c.keys) and values $(c.values)")
-Base.show(io::IO, ::Type{<:EltypeCache}) = print(io, "EltypeCache{...}")
-
 ########################
 # Compile coordinates
 ########################
@@ -499,9 +496,6 @@ struct CompiledMechanism{T, R, CC}
         new{T, typeof(rbtree), typeof(_components)}(name(m), rbtree, _components, component_id_map)
     end
 end
-
-Base.show(io::IO, m::CompiledMechanism) = print(io, "CompiledMechanism{$(eltype(m))...}($(name(m)))")
-Base.show(io::IO, ::Type{CompiledMechanism{T, R, CC}}) where {T, R, CC} = print(io, "CompiledMechanism{$T, $R, $CC}")
 
 name(m::CompiledMechanism) = m.name
 frames(m::CompiledMechanism) = collect(keys(m.rbtree.frame_id_map))

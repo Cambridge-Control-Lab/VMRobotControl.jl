@@ -110,7 +110,6 @@ struct MechKinematicsCache{T} <: MechanismCache{T}
     end
 end
 const MechKinematicsBundle = MechanismCacheBundle{<:Any, <:MechKinematicsCache}
-Base.show(io::IO, b::MechKinematicsBundle) = print(io, "MechKinematicsBundle{...}(\"$(b.mechanism.name)\", ...)")
 
 struct MechJacobiansCache{T} <: MechanismCache{T}
     t::Base.RefValue{T}
@@ -137,7 +136,6 @@ struct MechJacobiansCache{T} <: MechanismCache{T}
     end
 end
 const MechJacobiansBundle = MechanismCacheBundle{<:Any, <:MechJacobiansCache}
-Base.show(io::IO, b::MechJacobiansBundle) = print(io, "MechJacobiansBundle{...}(\"$(b.mechanism.name)\", ...)")
 
 
 struct MechRBStatesCache{T} <: MechanismCache{T}
@@ -174,7 +172,6 @@ struct MechRBStatesCache{T} <: MechanismCache{T}
     end
 end
 const MechRBStatesBundle = MechanismCacheBundle{<:Any, <:MechRBStatesCache}
-Base.show(io::IO, b::MechRBStatesBundle) = print(io, "MechRBStatesBundle{...}(\"$(b.mechanism.name)\", ...)")
 
 struct MechDynamicsCache{T} <: MechanismCache{T}
     t::Base.RefValue{T}
@@ -233,7 +230,6 @@ struct MechDynamicsCache{T} <: MechanismCache{T}
     end 
 end
 const MechDynamicsBundle = MechanismCacheBundle{<:Any, <:MechDynamicsCache}
-Base.show(io::IO, b::MechDynamicsBundle) = print(io, "MechDynamicsBundle{...}(\"$(b.mechanism.name)\", ...)")
 
 struct MechRNECache{T} <: MechanismCache{T}
     t::Base.RefValue{T}
@@ -282,7 +278,6 @@ struct MechRNECache{T} <: MechanismCache{T}
     end 
 end
 const MechRNEBundle = MechanismCacheBundle{<:Any, <:MechRNECache}
-Base.show(io::IO, b::MechRNEBundle) = print(io, "MechRNEBundle{...}(\"$(b.mechanism.name)\", ...)")
 
 
 #################
@@ -767,10 +762,6 @@ function virtual_mechanism_cache(bundle::VMSKinematicsBundle)
     )
 end
 
-function Base.show(io::IO, b::VMSKinematicsBundle)
-    print(io, "VMSKinematicsBundle{...}(\"$(name(b.vms))\", ...)")
-end
-
 ######################
 
 struct VMSDynamicsCache{T} <: VirtualMechanismSystemCache{T}
@@ -863,11 +854,6 @@ function virtual_mechanism_cache(bundle::VMSDynamicsBundle)
         )
     )
 end
-
-function Base.show(io::IO, b::VMSDynamicsBundle)
-    print(io, "VMSDynamicsBundle{...}(\"$(name(b.vms))\", ...)")
-end
-
 
 ######################
 # VMSKinematicsCache

@@ -34,8 +34,6 @@ end
 LinearDamper(damping, p::String, c::String) = LinearDamper(damping, RotatedCoord(p, c))
 LinearDamper(damping, p::Int, c::Int) = LinearDamper(damping, RotatedCoord(p, c))
 
-Base.show(io::IO, d::LinearDamper) = print(io, "LinearDamper{...}($(d.damping), ...)")
-
 function _opspace_force(cache::CacheBundle, d::LinearDamper, )
     c, coord, = d.damping, d.coord
     ż = _velocity(cache, coord)

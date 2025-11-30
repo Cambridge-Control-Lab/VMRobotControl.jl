@@ -58,11 +58,6 @@ struct TypeStableIdx{T}
     TypeStableIdx{T}(vecidx::Int) where T = new{T}(vecidx)
 end
 
-function Base.show(io::IO, ::Type{TypeStableIdx{T}}) where T
-    print(io, "TypeStableIdx{$T}")
-end
-
-
 function _get_matching_tupindex(::Type{TypeStableCollection{TUPTYPE}}, ::Type{T}) where {TUPTYPE, T}
     for (i, vectype) in enumerate(TUPTYPE.types)
         if eltype(vectype) == T
@@ -298,18 +293,5 @@ function Base.isapprox(c::TypeStableCollection{T1}, other::TypeStableCollection{
 end
 
 Base.isempty(c::TypeStableCollection) = length(c) == 0
-
-function Base.show(io::IO, c::TypeStableCollection)
-    NTypes = length(c.tup)
-    print(io, "TypeStableCollection with $(length(c)) items of $(NTypes) types")
-    NTypes > 3 ? println(io, ", 3 shown:") : println(io, ":")
-    for i = 1:min(length(c.tup), 3)
-        vec = c.tup[i]
-        println(io, "  $(length(vec)) $(eltype(vec))")
-    end
-    if length(c) > 3
-        println(io, "  ...")
-    end
-end
 
 end

@@ -48,9 +48,6 @@ const CVMSystem{T, M1, M2, TSC1, TSC2} = CompiledVirtualMechanismSystem{T, M1, M
 
 Base.eltype(::Type{CVMSystem{T, M1, M2, TSC1, TSC2}}) where {T, M1, M2, TSC1, TSC2} = T
 
-Base.show(io::IO, vms::CVMSystem) = print(io, "CompiledVirtualMechanismSystem{$(eltype(vms)), ...}($(name(vms))...)")
-Base.show(io::IO, ::Type{<:CVMSystem}) = print(io, "CompiledVirtualMechanismSystem{...}")
-
 name(vms::CVMSystem) = vms.name
 robot_mechanism_type(::Type{CVMSystem{T, M1, M2, TSC1, TSC2}}) where {T, M1, M2, TSC1, TSC2} = M1
 robot_mechanism_type(vms::CVMSystem) = robot_mechanism_type(typeof(vms))

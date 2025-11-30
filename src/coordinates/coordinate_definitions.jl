@@ -38,7 +38,6 @@ dependencies(c::CoordDifference) = [c.parent, c.child]
 cache_size(c::Type{<:CoordDifference}) = length(c)
 has_configuration(c::Type{CoordDifference{ID1, ID2}}) where {ID1, ID2} = has_configuration(coord_type(ID1)) && has_configuration(coord_type(ID2))
 
-Base.show(io::IO, c::CoordDifference{ID1, ID2}) where {ID1, ID2} = print(io, "CoordDifference{$ID1, $ID2}($(c.parent), $(c.child))")
 Base.length(::Type{CoordDifference{ID1, ID2}}) where {ID1, ID2} = length(coord_type(ID1))
 Base.eltype(::Type{CoordDifference{ID1, ID2}}) where {ID1, ID2} = promote_type(eltype(coord_type(ID1)), eltype(coord_type(ID2)))
 
@@ -81,7 +80,6 @@ dependencies(c::CoordSum) = [c.c1, c.c2]
 cache_size(c::Type{<:CoordSum}) = length(c)
 has_configuration(c::Type{CoordSum{ID1, ID2}}) where {ID1, ID2} = has_configuration(coord_type(ID1)) && has_configuration(coord_type(ID2))
 
-Base.show(io::IO, c::CoordSum{ID1, ID2}) where {ID1, ID2} = print(io, "CoordSum{$ID1, $ID2}($(c.c1), $(c.c2))")
 Base.length(::Type{CoordSum{ID1, ID2}}) where {ID1, ID2} = length(coord_type(ID1))
 Base.eltype(::Type{CoordSum{ID1, ID2}}) where {ID1, ID2} = promote_type(eltype(coord_type(ID1)), eltype(coord_type(ID2)))
 
@@ -118,7 +116,6 @@ dependencies(c::CoordStack) = [c.c1, c.c2]
 cache_size(c::Type{<:CoordStack}) = length(c)
 has_configuration(c::Type{<:CoordStack{ID1, ID2}}) where {ID1, ID2} = has_configuration(coord_type(ID1)) && has_configuration(coord_type(ID2))
 
-Base.show(io::IO, c::CoordStack{ID1, ID2}) where {ID1, ID2} = print(io, "CoordStack{$ID1, $ID2}($(c.c1), $(c.c2))")
 Base.length(::Type{CoordStack{ID1, ID2}}) where {ID1, ID2} = length(coord_type(ID1)) + length(coord_type(ID2))
 Base.eltype(::Type{CoordStack{ID1, ID2}}) where {ID1, ID2} = promote_type(eltype(coord_type(ID1)), eltype(coord_type(ID2)))
 
@@ -156,7 +153,6 @@ dependencies(c::CoordSlice) = [c.coord,]
 cache_size(c::Type{<:CoordSlice}) = 0
 has_configuration(::Type{<:CoordSlice{N, ID}}) where {N, ID} = has_configuration(coord_type(ID))
 
-Base.show(io::IO, c::CoordSlice{N, ID}) where {N, ID} = print(io, "CoordSlice{$N, $ID}($(c.coord), $(c.idxs))")
 Base.length(::Type{CoordSlice{N, ID}}) where {N, ID} = N
 Base.eltype(::Type{CoordSlice{N, ID}}) where {N, ID} = eltype(coord_type(ID))
 
@@ -182,7 +178,6 @@ dependencies(c::ConstCoord) = ()
 cache_size(c::Type{<:ConstCoord}) = length(c)
 has_configuration(c::Type{<:ConstCoord}) = true
 
-Base.show(io::IO, c::ConstCoord{N, T}) where {N, T} = print(io, "ConstCoord{$N, $T}($(c.val))")
 Base.length(::Type{ConstCoord{N, T}}) where {N, T} = N
 Base.eltype(::Type{ConstCoord{N, T}}) where {N, T} = T
 
@@ -211,7 +206,6 @@ cache_size(c::Type{<:ReferenceCoord}) = length(c)
 has_configuration(c::Type{<:ReferenceCoord}) = true
 
 
-Base.show(io::IO, c::ReferenceCoord{N, T}) where {N, T} = print(io, "ReferenceCoord{$N, $T}($(c.val[]))")
 Base.length(::Type{ReferenceCoord{N, T}}) where {N, T} = N
 Base.eltype(::Type{ReferenceCoord{N, T}}) where {N, T} = T
 
@@ -268,7 +262,6 @@ dependencies(c::FramePoint) = ()
 cache_size(c::Type{<:FramePoint}) = 3
 has_configuration(c::Type{<:FramePoint}) = true
 
-Base.show(io::IO, c::FramePoint{T, FID}) where {T, FID} = print(io, "FramePoint{$T, $FID}($(c.frameID), $(c.point))")
 Base.length(::Type{FramePoint{T, FID}}) where {T, FID} = 3
 Base.eltype(::Type{FramePoint{T, FID}}) where {T, FID} = T
 
@@ -293,7 +286,6 @@ dependencies(c::FrameOrigin) = ()
 cache_size(c::Type{<:FrameOrigin}) = 3
 has_configuration(c::Type{<:FrameOrigin}) = true
 
-Base.show(io::IO, c::FrameOrigin{FID}) where FID = print(io, "FrameOrigin{$FID}($(c.frameID))")
 Base.length(::Type{FrameOrigin{FID}}) where FID = 3
 Base.eltype(::Type{FrameOrigin{FID}}) where FID = missing
 

@@ -48,12 +48,6 @@ end
 
 Base.isapprox(a::LinearSpring, b::LinearSpring) = (a.coord == b.coord) & (a.stiffness ≈ b.stiffness)
 
-function Base.show(io::IO, ::MIME"text/plain", c::LinearSpring)
-    print(io, "LinearSpring(stiffness ")
-    print(io, c.stiffness)
-    print(io, ", coord $(c.coord))")
-end
-
 ############################
 # TanhSpring
 ############################
