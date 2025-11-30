@@ -75,8 +75,48 @@ velocity_size(j::MechanismJoint) = config_size(j.jointData)
 
 
 #############################################
+# Compiled Mechanism joint
 
-struct CompiledJointID{J} <: AbstractCompiledMechanismIndex
+@kwdef struct CompiledMechanismJoint{T, JD}
+    jointData::JD
+    parentFrameID::CompiledFrameID
+    childFrameID::CompiledFrameID
+    q_idx::Int    # Where in the mechanism config vector (q) does the joint config vector start
+    q̇_idx::Int    # Where in the mechanism velocity vector (q̇) does the joint velocity vector start
+    function CompiledMechanismJoint(jointdata::AbstractJointData{T}, parentFrameID, childFrameID, q_idx, q̇_idx) where T
+        new{T, typeof(jointdata)}(jointdata, parentFrameID, childFrameID, q_idx, q̇_idx)
+    end
+    function CompiledMechanismJoint{T, JD}(; jointData::JD, parentFrameID, childFrameID, q_idx, q̇_idx) where {T, JD}
+        new{T, JD}(jointData, parentFrameID, childFrameID, q_idx, q̇_idx)
+    end    
+end
+
+jointdata_type(::Type{CompiledMechanismJoint{T, JD}}) where {T, JD} = JD
+jointdata_type(::CMJ) where CMJ <: CompiledMechanismJoint = jointdata_type(CMJ)
+
+remaker_of(j::CompiledMechanismJoint{T, JD}) where {T, JD} = CompiledMechanismJoint{T, JD}
+
+ndof(::Type{CompiledMechanismJoint{T, JD}}) where {T, JD} = config_size(JD)
+
+function q_idxs(j::CompiledMechanismJoint)
+    N = config_size(j.jointData)
+    start = j.q_idx
+    stop  = j.q_idx + N
+    return SVector{N, Int}(NTuple{N, Int}(start:stop))
+end
+
+function q̇_idxs(j::CompiledMechanismJoint)
+    N = velocity_size(typeof(j.jointData))
+    start = j.q̇_idx
+    stop  = j.q̇_idx + N
+    return SVector{N, Int}(NTuple{N, Int}(start:stop))
+end
+
+Base.show(io::IO, ::Type{CompiledMechanismJoint{T, JD}}) where {T, JD} = print(io, "CompiledMechanismJoint($T, $JD)")
+
+#############################################
+# Compiled Joint ID
+struct CompiledJointID{J <: CompiledMechanismJoint} <: AbstractCompiledMechanismIndex
     idx::TypeStableIdx{J}
     # Note that if the joint has more than 1DOF, then q_idx is only the START of the joint
     # config vector. It's length is determined by the type of the joint/jointdata
@@ -101,49 +141,6 @@ _vms_location(::VMSJointID{S, J}) where {S, J} = Val{S}()
 ndof(::Type{VMSJointID{S, J}}) where {S, J} = ndof(J)
 
 const JointID = Union{String, CompiledJointID, VMSJointID}
-
-struct CompiledMechanismJoint{T, JD}
-    jointData::JD
-    parentFrameID::CompiledFrameID
-    childFrameID::CompiledFrameID
-    q_idx::Int    # Where in the mechanism config vector (q) does the joint config vector start
-    q̇_idx::Int    # Where in the mechanism velocity vector (q̇) does the joint velocity vector start
-    function CompiledMechanismJoint(jointdata::AbstractJointData{T}, parentFrameID, childFrameID, q_idx, q̇_idx) where T
-        new{T, typeof(jointdata)}(jointdata, parentFrameID, childFrameID, q_idx, q̇_idx)
-    end
-    function CompiledMechanismJoint{T, JD}(; jointData::JD, parentFrameID, childFrameID, q_idx, q̇_idx) where {T, JD}
-        new{T, JD}(jointData, parentFrameID, childFrameID, q_idx, q̇_idx)
-    end    
-end
-
-jointdata_type(::Type{CompiledMechanismJoint{T, JD}}) where {T, JD} = JD
-jointdata_type(::CMJ) where CMJ <: CompiledMechanismJoint = jointdata_type(CMJ)
-
-remaker_of(j::CompiledMechanismJoint{T, JD}) where {T, JD} = CompiledMechanismJoint{T, JD}
-
-ndof(::Type{CompiledMechanismJoint{T, JD}}) where {T, JD} = config_size(JD)
-
-
-# const CompiledMechanismJoint = MechanismJoint{T, J, JID, Int} where {T, J, JID<:CompiledJointID}
-
-function q_idxs(j::CompiledMechanismJoint)
-    N = config_size(j.jointData)
-    start = j.q_idx
-    stop  = j.q_idx + N
-    return SVector{N, Int}(NTuple{N, Int}(start:stop))
-end
-
-function q̇_idxs(j::CompiledMechanismJoint)
-    N = velocity_size(typeof(j.jointData))
-    start = j.q̇_idx
-    stop  = j.q̇_idx + N
-    return SVector{N, Int}(NTuple{N, Int}(start:stop))
-end
-
-Base.show(io::IO, ::Type{CompiledMechanismJoint{T, JD}}) where {T, JD} = print(io, "CompiledMechanismJoint($T, $JD)")
-
-
-
 
 ######################
 # Apply forces to frames

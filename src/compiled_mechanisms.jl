@@ -553,7 +553,7 @@ Base.getindex(m::CompiledMechanism, id::CompiledCoordID) = get_compiled_coord(m,
 Base.getindex(m::CompiledMechanism, id::CompiledComponentID) = get_compiled_component(m, id)
 
 Base.setindex!(m::CompiledMechanism, val::J, id::CompiledJointID{J}) where J = joints(m)[id.idx] = val
-Base.setindex!(m::CompiledMechanism, val::C, id::CompiledCoordID{C}) where C = coordinates(m)[id.depth][id.idx] = val
+Base.setindex!(m::CompiledMechanism, val::CompiledCoord{C}, id::CompiledCoordID{C}) where C = coordinates(m)[id.depth][id.idx] = val
 Base.setindex!(m::CompiledMechanism, val::C, id::CompiledComponentID{C}) where C = components(m)[id.idx] = val
 
 get_force_components(m::CompiledMechanism) = filtertype(components(m), Union{Storage, Dissipation, Inertance, GenericComponent})

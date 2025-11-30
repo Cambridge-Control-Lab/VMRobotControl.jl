@@ -28,7 +28,7 @@ Base.show(io::IO, ::Type{<:CompiledCoord{C}}) where C = print(io, "CompiledCoord
 
 A unique identifier for a coordinte in a compiled mechanism/virtual mechanism system.
 """
-struct CompiledCoordID{C} <: AbstractCompiledMechanismIndex
+struct CompiledCoordID{C <: CoordinateData} <: AbstractCompiledMechanismIndex
     depth::Int64
     idx::TypeStableIdx{CompiledCoord{C}}
     function CompiledCoordID(depth, idx::TypeStableIdx{CompiledCoord{C}}) where C
