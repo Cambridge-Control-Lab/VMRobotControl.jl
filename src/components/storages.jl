@@ -25,7 +25,7 @@ an SMatrix).
     stiffness::K
     coord::C
     function LinearSpring(stiffness::K, coord::C) where {K, C}
-        (isposdef(stiffness) || iszero(stiffness)) || @warn "Expected spring stiffness to be positive definite (or zero): '$(stiffness)'"
+        # (isposdef(stiffness) || iszero(stiffness)) || @warn "Expected spring stiffness to be positive definite (or zero): '$(stiffness)'"
         isa(stiffness, Array) && @error "Warning, used an Array (probably a matrix) as a stiffness. This will cause allocations. Use a StaticArray (SMatrix) instead."
         new{eltype(K), K, C}(stiffness, coord)
     end

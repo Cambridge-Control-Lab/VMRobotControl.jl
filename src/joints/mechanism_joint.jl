@@ -86,9 +86,6 @@ velocity_size(j::MechanismJoint) = config_size(j.jointData)
     function CompiledMechanismJoint(jointdata::AbstractJointData{T}, parentFrameID, childFrameID, q_idx, q̇_idx) where T
         new{T, typeof(jointdata)}(jointdata, parentFrameID, childFrameID, q_idx, q̇_idx)
     end
-    function CompiledMechanismJoint{T, JD}(; jointData::JD, parentFrameID, childFrameID, q_idx, q̇_idx) where {T, JD}
-        new{T, JD}(jointData, parentFrameID, childFrameID, q_idx, q̇_idx)
-    end    
 end
 
 jointdata_type(::Type{CompiledMechanismJoint{T, JD}}) where {T, JD} = JD

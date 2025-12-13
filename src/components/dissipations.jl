@@ -24,7 +24,7 @@ should not cause allocations when multiplied (i.e. use a Float64 or an SMatrix).
     damping::K
     coord::C
     function LinearDamper(damping::K, coord::C) where {K, C}
-        (isposdef(damping) || iszero(damping)) || @warn "Expected damper damping to be positive definite: '$(damping)'"
+        # (isposdef(damping) || iszero(damping)) || @warn "Expected damper damping to be positive definite: '$(damping)'"
         isa(damping, Array) && @error "Warning, used an Array (probably a matrix) as a damper coefficient. This will cause allocations. Use a StaticArray (SMatrix) instead."
         new{eltype(K), K, C}(damping, coord)
     end
