@@ -114,11 +114,11 @@ for (ls, dcache) in zip((ls1, ls2), (plotting_dcache_1, plotting_dcache_2))
             error("Unknown force length")
         end
     end
-    arrows!(
-        ls, 
+    arrows3d!(
+        ls,
         map(p -> [p, p, p], tcp_pos), # Position
         map(f -> (0.01*norm(f)) * f / norm(f), forces); # Direction/magnitude
-        arrowsize = map(fs -> [0.05 + (0.01*norm(f)) for f in fs], forces), # Thickness
+        markerscale = map(fs -> [0.05 + (0.01*norm(f)) for f in fs], forces), # Thickness
         color = [red, cyan, magenta],
     )
 end

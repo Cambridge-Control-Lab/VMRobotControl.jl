@@ -118,8 +118,8 @@ end
 end
 
 
-arrows!(ls, positions, fs; lengthscale=f_scale, arrowsize=map(f->*(f, 50), f_scale), color=:red, )
-arrows!(ls, positions, τs; lengthscale=τ_scale, arrowsize=0.04, color=:blue, )
+arrows3d!(ls, positions, fs; lengthscale=f_scale, markerscale=map(f->*(f, 50), f_scale), color=:red, )
+arrows3d!(ls, positions, τs; lengthscale=τ_scale, markerscale=0.04, color=:blue, )
 
 
 end

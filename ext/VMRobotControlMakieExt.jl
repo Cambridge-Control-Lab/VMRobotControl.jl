@@ -397,7 +397,7 @@ end
 # Robot Sketch
 ################################################################################
 
-Makie.@recipe(RobotSketch, robot) do scene
+Makie.@recipe(RobotSketch, cache) do scene
     Makie.Theme(
         scale=1.0,
         meshcolor=:white,
@@ -409,7 +409,7 @@ end
 
 function Makie.plot!(plot::RobotSketch{Tuple{C}}) where C<:Union{Mechanism, VirtualMechanismSystem}
     @warn "Plotting a Mechanism of VirtualMechanismSystem. For speed, compile before plotting."
-    map!(robot -> new_kinematics_cache(compile(robot)), plot, [:robot], :kcache)
+    map!(cache_arg -> new_kinematics_cache(compile(cache_arg)), plot, [:cache], :kcache)
     robotsketch!(plot, plot.kcache)
 end
 
@@ -417,7 +417,7 @@ Makie.preferred_axis_type(plot::RobotSketch) = Makie.LScene
 
 # Plot robot with no visuals
 function Makie.plot!(plot::RobotSketch{Tuple{C}}) where C<:MechanismCacheBundle
-    cache = plot.robot
+    cache = plot.cache
 
     jointIDs = [jID for (_, jID) in cache[].mechanism.rbtree.joint_id_map]
 
@@ -496,7 +496,7 @@ end
 
 ################################
 
-Makie.@recipe(RobotVisualize, robot) do scene
+Makie.@recipe(RobotVisualize, cache) do scene
     Makie.Theme(
         shading = true,
     )
@@ -506,12 +506,12 @@ Makie.preferred_axis_type(plot::RobotVisualize) = Makie.LScene
 
 function Makie.plot!(plot::RobotVisualize{Tuple{C}}) where C<:Union{Mechanism, VirtualMechanismSystem}
     @warn "Plotting a Mechanism of VirtualMechanismSystem. For speed, compile before plotting."
-    map!(robot -> new_kinematics_cache(compile(robot)), plot, [:robot], :kcache)
+    map!(cache_arg -> new_kinematics_cache(compile(cache_arg)), plot, [:cache], :kcache)
     robotvisualize!(plot, plot.kcache)
 end
 
 function Makie.plot!(plot::RobotVisualize{Tuple{C}}) where C<:MechanismCacheBundle
-    cache = plot.robot;
+    cache = plot.cache;
     vis = visuals(cache[].mechanism); 
     # isempty(vis) && error("No visuals to plot")
 

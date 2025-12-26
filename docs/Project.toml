@@ -12,4 +12,4 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 VMRobotControl = "7d923390-5bb2-4b12-9c06-5b46ef7ec375"
 
 [sources]
-VMRobotControl = {path = ".."}
+VMRobotControl = {path = "/home/daniel/git-repos/VMRobotControl.jl"}

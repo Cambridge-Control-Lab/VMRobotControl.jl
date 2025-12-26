@@ -125,8 +125,8 @@ tcp_pos = map(plotting_kcache) do kcache
     Point3f(configuration(kcache, tcp_pos_id))
 end
 force = map(t -> 0.01 * Vec3f(disturbance_func(t)), plotting_t)
-arrowsize = map(f -> 0.1*(f'*f)^(0.25), force)
-arrows!(ls, map(p -> [p], tcp_pos), map(f -> [f], force); color = :red, arrowsize)
+arrowscale = map(f -> 0.1*(f'*f)^(0.25), force)
+arrows3d!(ls, map(p -> [p], tcp_pos), map(f -> [f], force); color = :red, markerscale = arrowscale)
 
 
 savepath = joinpath(module_path, "docs/src/assets/franka_impedance_control.mp4")
