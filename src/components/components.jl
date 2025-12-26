@@ -450,7 +450,7 @@ function compile_visual(v::Visual)
                 specular = haskey(kwargs, :specular) ? kwargs[:specular] : v.specular
                 shininess = haskey(kwargs, :shininess) ? kwargs[:shininess] : v.shininess
                 _mesh = convert(GeometryBasics.GLNormalMesh{3}, mesh)
-                transformed_mesh = VMRobotControl.transform_mesh(_mesh, v.transform)
+                transformed_mesh = isnothing(v.transform) ? _mesh : VMRobotControl.transform_mesh(_mesh, v.transform)
                 M = typeof(transformed_mesh)
                 CompiledVisual{M}(v.frame, transformed_mesh, color, specular, shininess)
             end
@@ -469,5 +469,7 @@ function compile_visual(v::Visual)
     else
         error("Unrecognized geometry type: $(typeof(v.geometry))")
     end
-    CompiledVisual(v.frame, mesh, v.color, v.specular, v.shininess)
+    # Apply transform if present
+    transformed_mesh = isnothing(v.transform) ? mesh : VMRobotControl.transform_mesh(mesh, v.transform)
+    CompiledVisual(v.frame, transformed_mesh, v.color, v.specular, v.shininess)
 end
