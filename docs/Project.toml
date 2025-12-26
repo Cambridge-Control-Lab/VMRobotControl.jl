@@ -10,3 +10,6 @@ LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
 MeshIO = "7269a6da-0436-5bbc-96c2-40638cbb6118"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 VMRobotControl = "7d923390-5bb2-4b12-9c06-5b46ef7ec375"
+
+[sources]
+VMRobotControl = {path = ".."}
