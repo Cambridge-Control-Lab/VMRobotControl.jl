@@ -42,6 +42,14 @@ end
 
 ################################################################################
 
+function test_on_mechanisms(test, mechanisms::Vector)
+    @showprogress desc=string(test) for m in mechanisms
+        @testset "Robot: '$(name(m))'" begin
+            test(m)
+        end
+    end
+end
+
 module_path = joinpath(splitpath(dirname(pathof(VMRobotControl)))[1:end-1])
 # Walk dir to find all rsons
 rsons = String[]
