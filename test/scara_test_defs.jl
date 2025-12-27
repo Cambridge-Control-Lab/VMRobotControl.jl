@@ -1,7 +1,7 @@
 using LinearAlgebra
 using VMRobotControl
 
-using VMRobotControl: AxisAngle, rotation_matrix, skew # For scara_tests
+using VMRobotControl: to_rotation_matrix, skew # For scara_tests
 using VMRobotControl: transform, linear_vel, angular_vel, origin
 
 using StaticArrays
@@ -126,14 +126,14 @@ function scara_test()
 
     # Opspace forces by hand
     I₁ʷ, İ₁ʷ = let 
-        R = rotation_matrix(rotor(tf₁))
+        R = to_rotation_matrix(rotor(tf₁))
         Ṙ = skew(ω₁) * R
         I = R * I₁ * R'
         İ = Ṙ * I₁ * R' + R * I₁ * Ṙ'
         I, İ    
     end
     I₂ʷ, İ₂ʷ = let 
-        R = rotation_matrix(rotor(tf₂))
+        R = to_rotation_matrix(rotor(tf₂))
         Ṙ = skew(ω₂) * R
         I = R * I₂ * R'
         İ = Ṙ * I₂ * R' + R * I₂ * Ṙ'

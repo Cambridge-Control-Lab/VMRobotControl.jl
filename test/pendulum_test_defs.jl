@@ -2,7 +2,7 @@ using LinearAlgebra
 using Random
 using VMRobotControl
 
-using VMRobotControl: AxisAngle, rotation_matrix, skew # For scara_tests
+using VMRobotControl: to_rotation_matrix, skew # For scara_tests
 using VMRobotControl: transform, linear_vel, angular_vel, origin
 
 using StaticArrays
@@ -97,7 +97,7 @@ function pendulum_test(a₁, l₁, m₁, I₁, t, q, q̇, u, gravity)
 
     # Opspace forces by hand
     I₁ʷ, İ₁ʷ = let 
-        R = rotation_matrix(rotor(tf₁))
+        R = to_rotation_matrix(rotor(tf₁))
         Ṙ = skew(ω₁) * R
         I = R * I₁ * R'
         İ = Ṙ * I₁ * R' + R * I₁ * Ṙ'

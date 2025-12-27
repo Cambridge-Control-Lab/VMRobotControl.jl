@@ -4,7 +4,7 @@
 using StaticArrays: SVector, SMatrix, @SMatrix
 using LinearAlgebra: norm
 import RigidBodyTransforms
-import RigidBodyTransforms: Rotor, scalar, bivector, to_rotation_matrix, angular_velocity_prematrix
+import RigidBodyTransforms: Rotor, scalar, bivector, to_rotation_matrix, angular_velocity_prematrix, angular_velocity_prematrix_derivative
 
 #######################################
 # Utility Functions
@@ -28,9 +28,78 @@ function angular_velocity(r::Rotor, ṙ::SVector{4})
     return ω
 end
 
+"""
+    quatmul_matrix(u::SVector{4})
+
+Returns matrix U such that quaternion multiplication quatmul(u, v) = U*v.
+"""
+function quatmul_matrix(u::SVector{4})
+    @SMatrix [u[1]  -u[2]  -u[3]  -u[4];
+              u[2]   u[1]  -u[4]   u[3];
+              u[3]   u[4]   u[1]  -u[2];
+              u[4]  -u[3]   u[2]   u[1] ]
+end
+
+quatmul_matrix(r::Rotor) = quatmul_matrix(rotor_to_svector(r))
+
+"""
+    quatmul_matrix_reverse(u::SVector{4})
+
+Returns matrix for reverse quaternion multiplication derivative.
+Used for computing dw/du where w = quatmul(u, v) and v is constant.
+"""
+function quatmul_matrix_reverse(u::SVector{4})
+    @SMatrix [u[1]   u[2]   u[3]   u[4];
+             -u[2]   u[1]   u[4]  -u[3];
+             -u[3]  -u[4]   u[1]   u[2];
+             -u[4]   u[3]  -u[2]   u[1] ]
+end
+
 #######################################
 # Derivatives
 #######################################
+
+"""
+    quaternion_derivative(rotor::Rotor, ω::SVector{3})
+
+Compute the time derivative of a rotor given its angular velocity.
+Returns a Rotor representing ṙ (not normalized).
+"""
+function quaternion_derivative(rotor::Rotor, ω::SVector{3})
+    s = scalar(rotor)
+    B = bivector(rotor)
+    dscalar = -1//2 * (ω[1]*B[1] + ω[2]*B[2] + ω[3]*B[3])
+    dBx = 1//2 * (ω[1]*s + ω[2]*B[3] - ω[3]*B[2])
+    dBy = 1//2 * (ω[2]*s + ω[3]*B[1] - ω[1]*B[3])
+    dBz = 1//2 * (ω[3]*s + ω[1]*B[2] - ω[2]*B[1])
+    Rotor(dscalar, SVector(dBx, dBy, dBz), Val{false}()) # Don't normalize, is a velocity
+end
+
+"""
+    quaternion_derivative_propagation(r::Rotor)
+
+Returns the matrix E which satisfies E*ω = ṙ, where ω is the angular velocity of rotor r.
+"""
+function quaternion_derivative_propagation(r::Rotor)
+    η, ϵ = scalar(r), bivector(r)
+    1//2 * @SMatrix [
+        -ϵ[1]   -ϵ[2]   -ϵ[3];
+         η       ϵ[3]   -ϵ[2];
+        -ϵ[3]    η       ϵ[1];
+         ϵ[2]   -ϵ[1]    η
+    ]
+end
+
+"""
+    quaternion_derivative_propagation_derivative(r::Rotor, ω)
+
+Returns the matrix Ė, time derivative of quaternion_derivative_propagation(r).
+"""
+function quaternion_derivative_propagation_derivative(r::Rotor, ω::SVector{3})
+    ṙ = quaternion_derivative(r, ω)
+    ṅ, ė = scalar(ṙ), bivector(ṙ)
+    quaternion_derivative_propagation(Rotor(SVector(ṅ, ė...), Val(false)))
+end
 
 """
     AxisAngleDerivative(axis, angle::T) where T

@@ -7,7 +7,7 @@ using VMRobotControl
 using VMRobotControl: joint_transform, joint_twist, joint_vpa, jacobian_column, AbstractJointData
 using VMRobotControl: Twist, SpatialAcceleration
 using VMRobotControl.Hessians: my_hessian
-using VMRobotControl.Transforms: angular_velocity, quatmul_geodual_bivector_matrix
+using VMRobotControl.Transforms: angular_velocity, angular_vel, quatmul_geodual_bivector_matrix
 
 using StaticArrays
 using Test

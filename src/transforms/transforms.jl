@@ -6,13 +6,15 @@ using RigidBodyTransforms:
     Rotor, Transform,
     XRotor, YRotor, ZRotor,
     scalar, bivector, origin, rotor,
-    to_rotation_matrix, to_axis_angle
+    to_rotation_matrix, to_axis_angle,
+    transform, rotate
 
 # Re-export core RigidBodyTransforms types and functions
 export Rotor, Transform
 export XRotor, YRotor, ZRotor
 export scalar, bivector, origin, rotor
 export to_rotation_matrix, to_axis_angle
+export transform, rotate
 
 # Export VMRobotControl-specific extensions
 export rotor_to_svector
@@ -22,6 +24,7 @@ export AxisAngleDerivative
 export angular_velocity, angular_velocity_prematrix, angular_velocity_prematrix_derivative
 export quaternion_derivative, quaternion_derivative_propagation, quaternion_derivative_propagation_derivative
 export quatmul_geodual_bivector_matrix
+export quatmul_matrix, quatmul_matrix_reverse
 export skew
 
 # Export VMRobotControl-specific types

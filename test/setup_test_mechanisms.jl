@@ -1,3 +1,6 @@
+using TestEnv
+TestEnv.activate("VMRobotControl")
+
 # TEST_ENZYME = "Enzyme" ∈ keys(Pkg.project().dependencies)
 TEST_ENZYME = false
 # TEST_ENZYME = true
@@ -15,7 +18,7 @@ using VMRobotControl
 using VMRobotControl: joint_transform, joint_twist, joint_vpa, jacobian_column, AbstractJointData
 using VMRobotControl: Twist, SpatialAcceleration
 using VMRobotControl.Hessians: my_hessian, hessian_vector_product
-using VMRobotControl.Transforms: angular_velocity, AxisAngle, AxisAngleDerivative, quatmul_matrix, quatmul_geodual_bivector_matrix
+using VMRobotControl.Transforms: angular_velocity, AxisAngleDerivative, quatmul_geodual_bivector_matrix
 using VMRobotControl: get_inertance_components
 using VMRobotControl: Storage, Inertance, GenericComponent
 import VMRobotControl: jacobian # Explicitly import to avoid name clash with Enzyme.jacobian
@@ -41,6 +44,7 @@ if TEST_ENZYME
 end
 
 ################################################################################
+
 
 function test_on_mechanisms(test, mechanisms::Vector)
     @showprogress desc=string(test) for m in mechanisms

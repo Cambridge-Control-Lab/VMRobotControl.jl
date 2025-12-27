@@ -11,7 +11,11 @@ using StaticArrays
 #################################
 
 function Hessians.value(::Type{T}, r::Rotor) where T
-    Rotor(Hessians.value(T, bivector(r)), Hessians.value(T, scalar(r)), Val(false)) # DONT NORMALIZE
+    Rotor(
+        Hessians.value(T, scalar(r)),
+        Hessians.value(T, bivector(r)),
+        Val(false) # DONT NORMALIZE
+    )
 end
 function Hessians.value(::Type{T}, tf::Transform) where T
     Transform(Hessians.value(T, origin(tf)), Hessians.value(T, rotor(tf)))

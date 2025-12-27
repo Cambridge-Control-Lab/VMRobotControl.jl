@@ -171,7 +171,6 @@ export # Rigid body transforms/velocities/accelerations
     Twist,
     SpatialAcceleration
 export # Additional Rotor contructors
-    AxisAngle, 
     XRotor,
     YRotor,
     ZRotor

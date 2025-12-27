@@ -1,3 +1,5 @@
+import RigidBodyTransforms: transform
+
 struct RigidBodyState{T}
     transform::Transform{T}
     twist::Twist{T}
