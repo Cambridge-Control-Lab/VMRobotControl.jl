@@ -1,74 +1,10 @@
-#####################
-# Rigid body transform
-#####################
-"""
-    Transform{T}(origin::SVector{3, T}, rotor::Rotor{T})
+# VMRobotControl-specific Transform Jacobian and Hessian types
+# Core Transform and Rotor types come from RigidBodyTransforms.jl
 
-A rigid body transform defined by an origin and a rotor (quaternion). 
-
-Can be constructed from either an origin and a rotor, or just an origin, or just a rotor.
-"""
-struct Transform{T}
-    origin::SVector{3, T}
-    rotor::Rotor{T}
-end
-# Constructors
-Transform(R::Rotor{T}) where T = Transform{T}(zero(SVector{3, T}), R)
-Transform(o::SVector{3, T}) where T = Transform{T}(o, zero(Rotor{T}))
-Transform{T}(tf::Transform{T}) where T = tf
-Transform{T2}(tf::Transform{T1}) where {T1, T2} = Transform{T2}(SVector{3, T2}(tf.origin), Rotor{T2}(tf.rotor))
-
-
-Base.:zero(::Type{Transform{T}}) where T = Transform{T}(zero(SVector{3, T}), zero(Rotor{T}))
-Base.:zero(::Transform{T}) where T = Transform{T}(zero(SVector{3, T}), zero(Rotor{T}))
-Random.rand(rng::AbstractRNG, ::Random.SamplerType{Transform{T}}) where T = Transform(rand(rng, SVector{3, T}), rand(rng, Rotor{T}))
-
-# Accessors
-origin(t::Transform) = t.origin
-rotor(t::Transform) = t.rotor
-
-function transform(T::Transform, p::SVector{3})
-    origin(T) + rotor(T)*p
-end
-
-function transform(tf1::Transform{T1}, tf2::Transform{T2}) where {T1, T2}
-    T_out = promote_type(T1, T2)
-    o1, o2 = origin(tf1), origin(tf2)
-    R1, R2 = rotor(tf1), rotor(tf2)
-    offset::SVector{3, T_out} = R1 * o2
-    o = o1 + offset
-    r = R1*R2
-    Transform(o, r)
-end
-
-function transform(tf::Transform{T1}, R::Rotor{T2}) where {T1, T2}
-    T_out = promote_type(T1, T2)
-    Transform{T_out}(tf.origin, tf.rotor*R)
-end
-
-function transform(R::Rotor{T1}, tf::Transform{T2}) where {T1, T2}
-    Transform(R*tf.origin, R*tf.rotor)
-end
-
-@inline Base.:*(T::Transform, other) = transform(T, other)
-@inline Base.:*(other, T::Transform) = transform(other, T)
-@inline Base.:*(T1::Transform, T2::Transform) = transform(T1, T2)
-
-function Base.inv(tf::Transform{T}) where T
-    r⁻¹, o = inv(rotor(tf)), origin(tf)
-    Transform{T}(r⁻¹*(-o), r⁻¹)
-end
-
-function Base.isapprox(a::Transform{T}, b::Transform{T}; kwargs...) where T
-    isapprox(rotor(a), rotor(b); kwargs...) && isapprox(origin(a), origin(b); kwargs...)
-end
-
-function Base.isnan(tf::Transform)
-    return any(isnan, origin(tf)) || isnan(rotor(tf))
-end
+import RigidBodyTransforms: Transform, Rotor, origin, rotor
 
 #####################
-# Derivatives
+# Transform Jacobians and Hessians
 #####################
 
 struct TransformJacobian{T, N, L1, L2}

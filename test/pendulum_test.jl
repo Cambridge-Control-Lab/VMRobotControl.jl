@@ -44,7 +44,7 @@ function pendulum_test(a₁, l₁, m₁, I₁, t, q, q̇, u, gravity)
     M_computed = copy(get_inertance_matrix(cache))
     
     # Transform by hand
-    tf₁ = Transform(AxisAngle(a₁, q[1]))
+    tf₁ = Transform(Rotor(; axis=a₁, angle=q[1]))
     tf₁_com = tf₁ * Transform(l₁)
     
     @test tf₁ ≈ get_transform(cache, L1)

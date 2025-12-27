@@ -59,7 +59,7 @@ function compute_stationary_point_A_b(transforms::AbstractVector{<:Transform})
     b = Vector{Float64}(undef, 3*N)
 
     for i = 1:N
-        A[(i-1)*3+1:i*3, 1:3] .= rotation_matrix(rotor(transforms[i]))
+        A[(i-1)*3+1:i*3, 1:3] .= to_rotation_matrix(rotor(transforms[i]))
         A[(i-1)*3+1:i*3, 4:6] .= -I(3)
         b[(i-1)*3+1:i*3] .= -origin(transforms[i])
     end

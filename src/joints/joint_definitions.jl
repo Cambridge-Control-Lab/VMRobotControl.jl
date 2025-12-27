@@ -93,7 +93,7 @@ TimeFuncJoint(f_tf, f_twist, f_vpa) = TimeFuncJoint{Float64, typeof(f_tf), typeo
     Revolute(axis::SVector{3}, tf::Transform)
 
 Represents a revolute/rotating joint between two frames. The transform from the
-child frame to the parent frame is `tf * Transform(AxisAngle(axis, q))`.
+child frame to the parent frame is `tf * Transform(Rotor(; axis=axis, angle=q))`.
 
 `axis` must be normalized: `norm(axis)≈1.0`.
 
@@ -308,9 +308,9 @@ end
 @inline _joint_relative_transform(joint::Rigid,             t, qⱼ::SVector{0}) = joint.transform
 @inline _joint_relative_transform(joint::ReferenceJoint,    t, qⱼ::SVector{0}) = joint.transform[]
 @inline _joint_relative_transform(joint::TimeFuncJoint,     t, qⱼ::SVector{0}) = joint.f_tf(t)
-@inline _joint_relative_transform(joint::RevoluteData,      t, qⱼ::SVector{1}) = joint.transform * Transform(AxisAngle(joint.axis, qⱼ[1], Val(false)))
+@inline _joint_relative_transform(joint::RevoluteData,      t, qⱼ::SVector{1}) = joint.transform * Transform(Rotor(; axis=joint.axis, angle=qⱼ[1], normalize=Val(false)))
 @inline _joint_relative_transform(joint::PrismaticData,     t, qⱼ::SVector{1}) = joint.transform * Transform(qⱼ[1] .* joint.axis)
-@inline _joint_relative_transform(joint::HelicalData,       t, qⱼ::SVector{1}) = joint.transform * (AxisAngle(joint.axis, qⱼ[1]) * Transform((qⱼ[1] * joint.lead)  .* joint.axis))
+@inline _joint_relative_transform(joint::HelicalData,       t, qⱼ::SVector{1}) = joint.transform * (Rotor(; axis=joint.axis, angle=qⱼ[1]) * Transform((qⱼ[1] * joint.lead)  .* joint.axis))
 @inline _joint_relative_transform(joint::RailData,          t, qⱼ::SVector{1}) = joint.transform * Transform(spline_position(qⱼ[1] / joint.scaling, joint.spline))
 @inline function _joint_relative_transform(joint::SphericalData, t, q::SVector{3})
     Q = norm(q)
@@ -497,7 +497,7 @@ end
         Val{false}()
     )
     δω = rotor(j.transform) * (angular_velocity_prematrix(rot) * rotor_to_svector(drot_dt))
-    δω̇ = rotation_matrix(rotor(j.transform)) * angular_velocity_prematrix(rot) * rotor_to_svector(ddrot_dt) + angular_velocity_prematrix(drot_dt) * rotor_to_svector(drot_dt)
+    δω̇ = to_rotation_matrix(rotor(j.transform)) * angular_velocity_prematrix(rot) * rotor_to_svector(ddrot_dt) + angular_velocity_prematrix(drot_dt) * rotor_to_svector(drot_dt)
 
     SpatialAcceleration(zero(δω̇), δω̇)
 end
@@ -634,7 +634,7 @@ function _jacobian_columns(joint::SphericalData, tfₚ::Transform, final_tf::Tra
     Jscalar = -sin(Q)*JQ
     Jbivector = q * Jsinc + sinc * SMatrix{3, 3}(1, 0, 0, 0, 1, 0, 0, 0, 1)
 
-    R = rotation_matrix(rotor(tfₚ) * rotor(joint.transform))
+    R = to_rotation_matrix(rotor(tfₚ) * rotor(joint.transform))
     Jw_cols = R * angular_velocity_prematrix(rot) * vcat(Jscalar, Jbivector)
     Jo_cols = zero(Jw_cols)
     Jo_cols, Jw_cols

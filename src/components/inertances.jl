@@ -107,12 +107,12 @@ end
 _get_inertia_rotor(cache, inr::Inertia) = rotor(get_transform(cache, coordinate(cache, inr.coord).coord_data.frameID))
 
 function change_inertia_frame(r::Rotor, I::SMatrix{3, 3})
-    R = Transforms.rotation_matrix(r)
+    R = Transforms.to_rotation_matrix(r)
     R*I*R'
 end
 
 function rotating_inertia_derivative(r::Rotor, ω::SVector{3}, I::SMatrix{3, 3})
-    R = Transforms.rotation_matrix(r)
+    R = Transforms.to_rotation_matrix(r)
     Ṙ = rotation_matrix_derivative(R, ω)
     Ṙ*I*R' + R*I*Ṙ'
 end

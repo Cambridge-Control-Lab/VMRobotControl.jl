@@ -627,7 +627,7 @@ end
 function __jacobian!(cache::CacheBundle, cmc::CMC{<:RotatedCoord})
     c = cmc.coord_data
     T_b = get_transform(cache, c.frameID)
-    R⁻¹ = rotation_matrix(inv(rotor(T_b)))    
+    R⁻¹ = to_rotation_matrix(inv(rotor(T_b)))    
     z = _configuration(cache, c.world_frame_coord)
     R⁻¹Sz = R⁻¹*skew(z)
 
@@ -733,7 +733,7 @@ end
 function __jacobian!(cache::CacheBundle, cmc::CMC{<:UnrotatedCoord})
     c = cmc.coord_data
     T_b = get_transform(cache, c.frameID)
-    R = rotation_matrix(rotor(T_b)) 
+    R = to_rotation_matrix(rotor(T_b)) 
     z = _configuration(cache, c.link_frame_coord)
     SRz = skew(R*z)
 

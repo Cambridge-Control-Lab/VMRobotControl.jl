@@ -28,6 +28,7 @@ PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 ResultTypes = "08a2b407-ddc3-586a-afd6-c784ad1fffe2"
+RigidBodyTransforms = "4438e006-1100-4444-ba68-048bf36c6e50"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
@@ -37,6 +38,9 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 [weakdeps]
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[sources]
+RigidBodyTransforms = {path = "/home/daniel/git-repos/RigidBodyTransforms.jl"}
 
 [extensions]
 VMRobotControlDifferentialEquationsExt = "DifferentialEquations"

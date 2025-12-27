@@ -277,7 +277,7 @@ function _sketchjoint!(ax, joint::PrismaticData, cache;
     if θ ≈ 0
         r = zero(Rotor{Float64})
     else
-        r = AxisAngle(rotation_axis, θ)
+        r = Rotor(; axis=rotation_axis, angle=θ)
     end
     tf = joint.transform * Transform(r)
     rect_mesh = rescale_mesh(normal_mesh(Rect(-0.06, -0.06, -0.1, 0.12, 0.12, 0.2)), scale)

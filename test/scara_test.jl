@@ -77,8 +77,8 @@ function scara_test()
     M_computed = copy(get_inertance_matrix(cache))
 
     # Transform by hand
-    tf₁ = Transform(AxisAngle(a₁, q[1]))
-    tf₂ = tf₁ * Transform(l₁) * Transform(AxisAngle(a₂, q[2]))
+    tf₁ = Transform(Rotor(; axis=a₁, angle=q[1]))
+    tf₂ = tf₁ * Transform(l₁) * Transform(Rotor(; axis=a₂, angle=q[2]))
     tfₑₑ = tf₂ * Transform(l₂)
 
     @test tf₁ == get_transform(cache, L1)
