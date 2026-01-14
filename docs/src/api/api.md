@@ -154,6 +154,7 @@ QuaternionAttitude
 ReferenceCoord
 RotatedCoord
 UnrotatedCoord
+ShadowCoord
 ```
 
 ## Components

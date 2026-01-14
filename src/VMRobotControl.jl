@@ -87,7 +87,8 @@ export # Coordinates
     QuaternionAttitude,
     ReferenceCoord,
     RotatedCoord,
-    UnrotatedCoord
+    UnrotatedCoord,
+    ShadowCoord
 export # Components 
     PointMass,
     GravityCompensator,

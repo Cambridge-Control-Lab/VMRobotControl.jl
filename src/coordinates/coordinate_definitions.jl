@@ -424,3 +424,31 @@ has_configuration(c::Type{<:UnrotatedCoord}) = true
 
 Base.length(::Type{UnrotatedCoord{C, FID}}) where {C, FID} = length(coord_type(C))
 Base.eltype(::Type{UnrotatedCoord{C, FID}}) where {C, FID} = eltype(coord_type(C))
+
+####################################################################################################
+# ShadowCoord
+####################################################################################################
+
+"""
+ShadowCoord(coord)
+
+Mirrors the configuration and velocity of another coordinate, 
+but does not contribute to the system Jacobian. 
+Can be used to create unidirectional springs or dampers.
+"""
+
+@kwdef struct ShadowCoord{C <: CoordID} <: CoordinateData
+    coord::C
+end
+
+_reassign_frames(c::ShadowCoord, _) = c
+_reassign_joints(c::ShadowCoord, _) = c
+_reassign_coords(c::ShadowCoord, coordID_map) = ShadowCoord(get_compiled_coordID(coordID_map, c.coord))
+
+dependencies(c::ShadowCoord) = (c.coord,)
+cache_size(c::Type{<:ShadowCoord}) = length(c)
+has_configuration(::Type{ShadowCoord{C}}) where {C} = has_configuration(coord_type(C))
+
+Base.show(io::IO, c::ShadowCoord{C}) where {C} = print(io, "ShadowCoord{$C}($(c.coord))")
+Base.length(::Type{ShadowCoord{C}}) where {C} = length(coord_type(C))
+Base.eltype(::Type{ShadowCoord{C}}) where {C} = eltype(coord_type(C))
