@@ -802,3 +802,23 @@ _velocity(cache::CacheBundle, cmc::CMC{<:UnrotatedCoord}) = SVector{length(cmc)}
 _jacobian(cache::MechanismCacheBundle, cmc::CMC{<:UnrotatedCoord}) = J_cache_view(cache, cmc)
 _jacobian(cache::VirtualMechanismSystemCacheBundle, cmc::CMC{<:UnrotatedCoord}) = J_cache_view(cache, cmc)
 _acceleration(cache::CacheBundle, cmc::CMC{<:UnrotatedCoord}) = SVector{length(cmc)}(α_cache_view(cache, cmc))
+
+####################################################################################################
+# ShadowCoord
+####################################################################################################
+
+@inline __configuration!(cache::CacheBundle, c::CMC{<:ShadowCoord}) = nothing
+@inline __velocity!(cache::CacheBundle, c::CMC{<:ShadowCoord}) = nothing
+
+function __jacobian!(cache::CacheBundle, c::CMC{<:ShadowCoord})
+    J = J_cache_view(cache, c)
+    fill!(J, zero(eltype(J))) # TODO do this once rather than every time
+    nothing
+end
+
+@inline __acceleration!(cache::CacheBundle, c::CMC{<:ShadowCoord}) = nothing
+
+_configuration(cache::CacheBundle, c::CMC{<:ShadowCoord}) = _configuration(cache, c.coord_data.coord)
+_velocity(cache::CacheBundle, c::CMC{<:ShadowCoord}) = _velocity(cache, c.coord_data.coord)
+_jacobian(cache::CacheBundle, c::CMC{<:ShadowCoord}) = J_cache_view(cache, c)
+_acceleration(cache::CacheBundle, c::CMC{<:ShadowCoord}) = _acceleration(cache, c.coord_data.coord)
